@@ -1,8 +1,37 @@
 using NUnit.Framework;
 using Sys.Text.Json;
+using Sys.Text.Json.JsonPath;
+using System;
+using System.Text.Json.JsonPath;
+using System.Text.Json.JsonPath.LambdaCompilation;
 
 namespace PatherTests
 {
+    public class Data
+    {
+        public Store store { get; set; }
+    }
+    public class Store
+    {
+        public Book[] book { get; set; }
+        public Bicycle bicycle { get; set; }
+    }
+
+    public class Book
+    {
+        public string category { get; set; }
+        public string author { get; set; }
+        public string title { get; set; }
+        public string isbn { get; set; }
+        public decimal price { get; set; }
+    }
+
+    public class Bicycle
+    {
+        public string color { get; set; }
+        public decimal price { get; set; }
+    }
+
     public class PatherTests
     {
         [SetUp]
@@ -49,8 +78,34 @@ namespace PatherTests
         ";
             var parser1 = new JsonPather();
             var untyped = parser1.Parse(input); // (object untyped = ...)
+            JsonPathScriptEvaluator evaluator =
+                (script, value, context) =>
+                    (value is Type)
+                    ? // This holds: (value as Type) == typeof(Func<string, T, IJsonPathContext, object>), with T inferred by JsonPathSelection::SelectNodes(...)
+                    ExpressionParser.Parse((Type)value, script, true, typeof(Data).Namespace).Compile()
+                    :
+                    null;
+            JsonPathSelection scope;
+            JsonPathNode[] nodes;
 
-            Assert.NotNull(untyped);
+            scope = new JsonPathSelection(untyped); // Cache the JsonPathSelection.
+            nodes = scope.SelectNodes("$.store.book[3].title"); // Normalized in bracket-notation: $['store']['book'][3]['title']
+            Assert.IsTrue(
+                nodes != null&&
+                nodes.Length == 1 &&
+                nodes[0].Value is string &&
+                nodes[0].As<string>() == "The Lord of the Rings"
+            );
+
+            scope = new JsonPathSelection(untyped, evaluator); // Cache the JsonPathSelection and its lambdas compiled on-demand (at run-time) by the evaluator.
+            nodes = scope.SelectNodes("$.store.book[?(@.ContainsKey(\"isbn\") && (string)@[\"isbn\"] == \"0-395-19395-8\")].title");
+            Assert.IsTrue
+            (
+                nodes != null &&
+                nodes.Length == 1 &&
+                nodes[0].Value is string &&
+                nodes[0].As<string>() == "The Lord of the Rings"
+            );           
         }
     }
 }
