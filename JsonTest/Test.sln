@@ -1,8 +1,12 @@
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual C# Express 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test.csproj", "{C4054A9A-4907-470E-90F7-3DAA6A378518}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Json", "System.Text.Json\System.Text.Json.csproj", "{56D09917-2BE1-4655-8235-310DC6E4887E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sys.Text.Json", "System.Text.Json\Sys.Text.Json.csproj", "{56D09917-2BE1-4655-8235-310DC6E4887E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatherTests", "..\PatherTests\PatherTests.csproj", "{664C48C0-24FF-4F0C-960D-461EA3A9E34A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,8 +39,23 @@ Global
 		{56D09917-2BE1-4655-8235-310DC6E4887E}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{56D09917-2BE1-4655-8235-310DC6E4887E}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{56D09917-2BE1-4655-8235-310DC6E4887E}.Release|x86.ActiveCfg = Release|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Debug|x86.Build.0 = Debug|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Release|x86.ActiveCfg = Release|Any CPU
+		{664C48C0-24FF-4F0C-960D-461EA3A9E34A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {940B2381-E5A1-4D18-827B-D35938FC9CEB}
 	EndGlobalSection
 EndGlobal
