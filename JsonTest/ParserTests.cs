@@ -27,6 +27,7 @@ using System.Text.Json; // Our stuff; cf. https://www.nuget.org/packages/System.
 
 namespace Test
 {
+    using Sys.Text.Json.JsonPath;
 #if RUN_UNIT_TESTS && (RUN_BASIC_JSONPATH_TESTS || RUN_ADVANCED_JSONPATH_TESTS)
     using System.Text.Json.JsonPath;
     using System.Text.Json.JsonPath.LambdaCompilation;
@@ -1004,7 +1005,7 @@ namespace Test
             LoopTest(GetVersionString(typeof(NetJSON.NetJSON).Assembly.GetName()), NetJSON.NetJSON.Deserialize<TheBurningMonk.RootObject>, THE_BURNING_MONK_TEST_FILE_PATH, 10);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<TheBurningMonk.RootObject>, THE_BURNING_MONK_TEST_FILE_PATH, 10);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<TheBurningMonk.RootObject>, THE_BURNING_MONK_TEST_FILE_PATH, 10);
 
 #if !THIS_JSON_PARSER_ONLY
             //LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<TheBurningMonk.RootObject>, THE_BURNING_MONK_TEST_FILE_PATH, 100);
@@ -1016,7 +1017,7 @@ namespace Test
             LoopTest(GetVersionString(typeof(NetJSON.NetJSON).Assembly.GetName()), NetJSON.NetJSON.Deserialize<TheBurningMonk.RootObject>, THE_BURNING_MONK_TEST_FILE_PATH, 100);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<TheBurningMonk.RootObject>, THE_BURNING_MONK_TEST_FILE_PATH, 100);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<TheBurningMonk.RootObject>, THE_BURNING_MONK_TEST_FILE_PATH, 100);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().DeserializeObject, OJ_TEST_FILE_PATH, 10000);
@@ -1025,7 +1026,7 @@ namespace Test
             //LoopTest("ServiceStack", new JsonSerializer<object>().DeserializeFromString, OJ_TEST_FILE_PATH, 10000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse, OJ_TEST_FILE_PATH, 10000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse, OJ_TEST_FILE_PATH, 10000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<HighlyNested>, OJ_TEST_FILE_PATH, 10000);
@@ -1037,7 +1038,7 @@ namespace Test
             LoopTest(GetVersionString(typeof(NetJSON.NetJSON).Assembly.GetName()), NetJSON.NetJSON.Deserialize<HighlyNested>, OJ_TEST_FILE_PATH, 10000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<HighlyNested>, OJ_TEST_FILE_PATH, 10000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<HighlyNested>, OJ_TEST_FILE_PATH, 10000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().DeserializeObject, OJ_TEST_FILE_PATH, 100000);
@@ -1046,7 +1047,7 @@ namespace Test
             //LoopTest("ServiceStack", new JsonSerializer<object>().DeserializeFromString, OJ_TEST_FILE_PATH, 100000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse, OJ_TEST_FILE_PATH, 100000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse, OJ_TEST_FILE_PATH, 100000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<HighlyNested>, OJ_TEST_FILE_PATH, 100000);
@@ -1058,7 +1059,7 @@ namespace Test
             LoopTest(GetVersionString(typeof(NetJSON.NetJSON).Assembly.GetName()), NetJSON.NetJSON.Deserialize<HighlyNested>, OJ_TEST_FILE_PATH, 100000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<HighlyNested>, OJ_TEST_FILE_PATH, 100000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<HighlyNested>, OJ_TEST_FILE_PATH, 100000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<BoonSmall>, BOON_SMALL_TEST_FILE_PATH, 1000000);
@@ -1067,7 +1068,7 @@ namespace Test
             LoopTest("ServiceStack", new JsonSerializer<BoonSmall>().DeserializeFromString, BOON_SMALL_TEST_FILE_PATH, 1000000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<BoonSmall>, BOON_SMALL_TEST_FILE_PATH, 1000000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<BoonSmall>, BOON_SMALL_TEST_FILE_PATH, 1000000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<BoonSmall>, BOON_SMALL_TEST_FILE_PATH, 10000000);
@@ -1076,7 +1077,7 @@ namespace Test
             LoopTest("ServiceStack", new JsonSerializer<BoonSmall>().DeserializeFromString, BOON_SMALL_TEST_FILE_PATH, 10000000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<BoonSmall>, BOON_SMALL_TEST_FILE_PATH, 10000000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<BoonSmall>, BOON_SMALL_TEST_FILE_PATH, 10000000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<Person>, TINY_TEST_FILE_PATH, 10000);
@@ -1085,7 +1086,7 @@ namespace Test
             LoopTest("ServiceStack", new JsonSerializer<Person>().DeserializeFromString, TINY_TEST_FILE_PATH, 10000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<Person>, TINY_TEST_FILE_PATH, 10000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<Person>, TINY_TEST_FILE_PATH, 10000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<Person>, TINY_TEST_FILE_PATH, 100000);
@@ -1094,7 +1095,7 @@ namespace Test
             LoopTest("ServiceStack", new JsonSerializer<Person>().DeserializeFromString, TINY_TEST_FILE_PATH, 100000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<Person>, TINY_TEST_FILE_PATH, 100000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<Person>, TINY_TEST_FILE_PATH, 100000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<Person>, TINY_TEST_FILE_PATH, 1000000);
@@ -1103,7 +1104,7 @@ namespace Test
             LoopTest("ServiceStack", new JsonSerializer<Person>().DeserializeFromString, TINY_TEST_FILE_PATH, 1000000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<Person>, TINY_TEST_FILE_PATH, 1000000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<Person>, TINY_TEST_FILE_PATH, 1000000);
 
 #if !THIS_JSON_PARSER_ONLY
             //LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<DictionaryDataAdaptJsonNetServiceStack>, DICOS_TEST_FILE_PATH, 10000);//(Can't deserialize properly)
@@ -1112,7 +1113,7 @@ namespace Test
             LoopTest("ServiceStack", new JsonSerializer<DictionaryDataAdaptJsonNetServiceStack>().DeserializeFromString, DICOS_TEST_FILE_PATH, 10000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<DictionaryData>, DICOS_TEST_FILE_PATH, 10000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<DictionaryData>, DICOS_TEST_FILE_PATH, 10000);
 
 #if !THIS_JSON_PARSER_ONLY
             //LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<DictionaryDataAdaptJsonNetServiceStack>, DICOS_TEST_FILE_PATH, 100000);//(Can't deserialize properly)
@@ -1121,7 +1122,7 @@ namespace Test
             LoopTest("ServiceStack", new JsonSerializer<DictionaryDataAdaptJsonNetServiceStack>().DeserializeFromString, DICOS_TEST_FILE_PATH, 100000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<DictionaryData>, DICOS_TEST_FILE_PATH, 100000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<DictionaryData>, DICOS_TEST_FILE_PATH, 100000);
 
 #if !THIS_JSON_PARSER_ONLY
             //LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<DictionaryDataAdaptJsonNetServiceStack>, DICOS_TEST_FILE_PATH, 1000000);//(Can't deserialize properly)
@@ -1130,7 +1131,7 @@ namespace Test
             LoopTest("ServiceStack", new JsonSerializer<DictionaryDataAdaptJsonNetServiceStack>().DeserializeFromString, DICOS_TEST_FILE_PATH, 1000000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<DictionaryData>, DICOS_TEST_FILE_PATH, 1000000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<DictionaryData>, DICOS_TEST_FILE_PATH, 1000000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().DeserializeObject, SMALL_TEST_FILE_PATH, 10000);
@@ -1139,7 +1140,7 @@ namespace Test
             //LoopTest("ServiceStack", new JsonSerializer<object>().DeserializeFromString, SMALL_TEST_FILE_PATH, 10000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse, SMALL_TEST_FILE_PATH, 10000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse, SMALL_TEST_FILE_PATH, 10000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().DeserializeObject, SMALL_TEST_FILE_PATH, 100000);
@@ -1148,7 +1149,7 @@ namespace Test
             //LoopTest("ServiceStack", new JsonSerializer<object>().DeserializeFromString, SMALL_TEST_FILE_PATH, 100000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse, SMALL_TEST_FILE_PATH, 100000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse, SMALL_TEST_FILE_PATH, 100000);
 
 #if !THIS_JSON_PARSER_ONLY
             LoopTest(typeof(JavaScriptSerializer).FullName, new JavaScriptSerializer().Deserialize<TwitterSample.RootObject>, TWITTER_TEST_FILE_PATH, 100000);
@@ -1160,7 +1161,7 @@ namespace Test
             LoopTest(GetVersionString(typeof(NetJSON.NetJSON).Assembly.GetName()), NetJSON.NetJSON.Deserialize<TwitterSample.RootObject>, TWITTER_TEST_FILE_PATH, 100000);
 #endif
 #endif
-            LoopTest(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<TwitterSample.RootObject>, TWITTER_TEST_FILE_PATH, 100000);
+            LoopTest(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<TwitterSample.RootObject>, TWITTER_TEST_FILE_PATH, 100000);
 
 #if !THIS_JSON_PARSER_ONLY
             var msJss = new JavaScriptSerializer() { MaxJsonLength = int.MaxValue };
@@ -1173,7 +1174,7 @@ namespace Test
             //Test(GetVersionString(typeof(NetJSON.NetJSON).Assembly.GetName()), NetJSON.NetJSON.Deserialize<FathersData>, FATHERS_TEST_FILE_PATH);
 #endif
 #endif
-            Test(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<FathersData>, FATHERS_TEST_FILE_PATH);
+            Test(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<FathersData>, FATHERS_TEST_FILE_PATH);
 
 #if RUN_UNIT_TESTS && RUN_ADVANCED_JSONPATH_TESTS
             JsonPathScriptEvaluator evaluator =
@@ -1195,7 +1196,7 @@ namespace Test
 #endif
             Test
             (
-                GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse<FathersData>, FATHERS_TEST_FILE_PATH,
+                GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse<FathersData>, FATHERS_TEST_FILE_PATH,
                 JSONPATH_SAMPLE_QUERY,
                 (parsed) => new JsonPathSelection(parsed, evaluator).SelectNodes(JSONPATH_SAMPLE_QUERY),
                 (selected) =>
@@ -1214,7 +1215,7 @@ namespace Test
                 //Test("ServiceStack", new JsonSerializer<object>().DeserializeFromString, HUGE_TEST_FILE_PATH);
 #endif
 #endif
-                Test(GetVersionString(typeof(JsonPather).Assembly.GetName()), new JsonParser().Parse, HUGE_TEST_FILE_PATH);
+                Test(GetVersionString(typeof(JsonParser).Assembly.GetName()), new JsonParser().Parse, HUGE_TEST_FILE_PATH);
             }
 
             StreamTest(null);
@@ -1247,7 +1248,7 @@ namespace Test
                         (type, obj, key, index) =>
                             ((key as string) == "id" || (key as string) == "name") ?
                             mapperCallback :
-                            JsonPather.Skip
+                            JsonParser.Skip
                     },
                     // We want to pick only the last 5 fathers from the source:
                     {
@@ -1255,7 +1256,7 @@ namespace Test
                         (type, obj, key, index) =>
                             (index >= 29995) ?
                             mapperCallback :
-                            JsonPather.Skip
+                            JsonParser.Skip
                     }
                 }
             );
@@ -1336,7 +1337,7 @@ namespace Test
                         (type, obj, key, index) =>
                             ((key as string) == "id" || (key as string) == "name") ?
                             filteredFatherStreamCallback :
-                            JsonPather.Skip
+                            JsonParser.Skip
                     },
                     // We want to pick only the last 5 fathers from the source:
                     {
@@ -1344,7 +1345,7 @@ namespace Test
                         (type, obj, key, index) =>
                             (index >= 29995) ?
                             filteredFatherStreamCallback :
-                            JsonPather.Skip
+                            JsonParser.Skip
                     }
                 };
 
@@ -1423,7 +1424,7 @@ namespace Test
                         (type, obj, key, index) =>
                             (index >= 29990) ?
                             filteredFatherStreamCallback :
-                            JsonPather.Skip
+                            JsonParser.Skip
                     }
                 };
 
