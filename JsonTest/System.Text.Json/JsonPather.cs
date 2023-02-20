@@ -832,8 +832,6 @@ namespace Sys.Text.Json
             return Parse<object>(input); 
         }
 
-        public object Parse(string input, IDictionary<Type, Func<Type, object, object, int, Func<object, object>>> mappers) { return Parse<object>(input, mappers); }
-
         public object Parse(TextReader input) { return Parse<object>(input); }
 
         public object Parse(Stream input) { return Parse<object>(input); }
@@ -847,16 +845,6 @@ namespace Sys.Text.Json
         public T Parse<T>(string input) 
         {
             return Parse(default(T), input);
-        }
-
-        public T Parse<T>(T prototype, string input)
-        { 
-            return Parse<T>(input, null); 
-        }
-
-        public T Parse<T>(string input, IDictionary<Type, Func<Type, object, object, int, Func<object, object>>> mappers)
-        {
-            return Parse(default(T), input, mappers);
         }
 
         public T Parse<T>(T prototype, string input)

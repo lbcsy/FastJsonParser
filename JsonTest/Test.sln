@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test.csproj", "{C40
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sys.Text.Json", "System.Text.Json\Sys.Text.Json.csproj", "{56D09917-2BE1-4655-8235-310DC6E4887E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatherTests", "..\PatherTests\PatherTests.csproj", "{664C48C0-24FF-4F0C-960D-461EA3A9E34A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PatherTests", "..\PatherTests\PatherTests.csproj", "{664C48C0-24FF-4F0C-960D-461EA3A9E34A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,8 +19,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C4054A9A-4907-470E-90F7-3DAA6A378518}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C4054A9A-4907-470E-90F7-3DAA6A378518}.Debug|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{C4054A9A-4907-470E-90F7-3DAA6A378518}.Debug|Mixed Platforms.Build.0 = Release|Any CPU
+		{C4054A9A-4907-470E-90F7-3DAA6A378518}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{C4054A9A-4907-470E-90F7-3DAA6A378518}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{C4054A9A-4907-470E-90F7-3DAA6A378518}.Debug|x86.ActiveCfg = Debug|x86
 		{C4054A9A-4907-470E-90F7-3DAA6A378518}.Debug|x86.Build.0 = Debug|x86
 		{C4054A9A-4907-470E-90F7-3DAA6A378518}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -31,8 +31,8 @@ Global
 		{C4054A9A-4907-470E-90F7-3DAA6A378518}.Release|x86.Build.0 = Release|x86
 		{56D09917-2BE1-4655-8235-310DC6E4887E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{56D09917-2BE1-4655-8235-310DC6E4887E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{56D09917-2BE1-4655-8235-310DC6E4887E}.Debug|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{56D09917-2BE1-4655-8235-310DC6E4887E}.Debug|Mixed Platforms.Build.0 = Release|Any CPU
+		{56D09917-2BE1-4655-8235-310DC6E4887E}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{56D09917-2BE1-4655-8235-310DC6E4887E}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{56D09917-2BE1-4655-8235-310DC6E4887E}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{56D09917-2BE1-4655-8235-310DC6E4887E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{56D09917-2BE1-4655-8235-310DC6E4887E}.Release|Any CPU.Build.0 = Release|Any CPU
