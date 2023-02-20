@@ -516,7 +516,7 @@ namespace Sys.Text.Json
         }
 #endif
 
-        private object Error(int outer) { throw Error("Bad value"); }
+        private object Error(int outer) { throw Error($"Bad value @outer={outer}"); }
         private object Null(int outer) { Read(); Next('u'); Next('l'); Next('l'); return null; }
         private object False(int outer) { Read(); Next('a'); Next('l'); Next('s'); Next('e'); return "false"; }
         private object True(int outer) { Read(); Next('r'); Next('u'); Next('e'); return "true"; }
