@@ -2,8 +2,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -38,7 +36,7 @@ namespace Sys.Text.Json
         // Read to next character
         private Func<int> Read;
         // Function to skip space(s)
-        private Func<int> Space;
+        private Func<int> SkipSpaces;
         private string txt;
         private readonly int lbs;
         private int len;
@@ -350,7 +348,7 @@ namespace Sys.Text.Json
         private Exception Error(string message) { return new Exception(string.Format("{0} at {1} (found: '{2}')", message, at, chr < EOF ? "\\" + chr : "EOF")); }
         private void Reset(Func<int> read, Action<int> next, Func<int, int> achar, Func<int> space)
         {
-            at = -1; chr = ANY; Read = read; Next = next; Char = achar; Space = space;
+            at = -1; chr = ANY; Read = read; Next = next; Char = achar; SkipSpaces = space;
         }
 
         private int StreamSpace()
@@ -430,7 +428,7 @@ namespace Sys.Text.Json
 
         private string ParseString(int outer)
         {
-            var ch = Space();
+            var ch = SkipSpaces();
             if (ch == '"')
             {
                 Read();
@@ -499,7 +497,7 @@ namespace Sys.Text.Json
 #else
         private unsafe ItemInfo FasterGetPropInfo(TypeInfo type)
         {
-            var p = type.Props; var m = type.Mlk; int ch = Space(), l = type.Mnl, n = p.Length, i = 0;
+            var p = type.Props; var m = type.Mlk; int ch = SkipSpaces(), l = type.Mnl, n = p.Length, i = 0;
             if (ch == '"')
             {
                 fixed (char* c = m)
@@ -520,8 +518,8 @@ namespace Sys.Text.Json
 
         private object Error(int outer) { throw Error("Bad value"); }
         private object Null(int outer) { Read(); Next('u'); Next('l'); Next('l'); return null; }
-        private object False(int outer) { Read(); Next('a'); Next('l'); Next('s'); Next('e'); return false; }
-        private object True(int outer) { Read(); Next('r'); Next('u'); Next('e'); return true; }
+        private object False(int outer) { Read(); Next('a'); Next('l'); Next('s'); Next('e'); return "false"; }
+        private object True(int outer) { Read(); Next('r'); Next('u'); Next('e'); return "true"; }
 
         private object Num(int outer)
         {
@@ -559,7 +557,7 @@ namespace Sys.Text.Json
 
         private object Parse(int typed)
         {
-            if (Space() != 'n' || !types[typed].IsNullable)
+            if (SkipSpaces() != 'n' || !types[typed].IsNullable)
                 return types[typed].Type.IsValueType ?
                     types[typed].IsNullable ?
                     types[types[typed].Inner].Parse(this, types[typed].Inner) :
@@ -570,15 +568,19 @@ namespace Sys.Text.Json
 
         private object Obj(int outer)
         {
-            var cached = types[outer]; var isAnon = cached.IsAnonymous; var hash = types[cached.Key]; var select = cached.Select; var props = cached.Props; var ctor = cached.Ctor;
+            var cached = types[outer]; 
+            var isAnon = cached.IsAnonymous; 
+            var hash = types[cached.Key];
+            var select = cached.Select; 
+            var props = cached.Props; 
+            var ctor = cached.Ctor;
             var atargs = isAnon ? new object[props.Length] : null;
             var mapper = null as Func<object, object>;
-            var typed = outer > 0 && cached.Dico == null && (ctor != null || isAnon);
             var keyed = hash.T;
             var ch = chr;
             if (ch != '{') throw Error("Bad object");
             Read();
-            ch = Space();
+            ch = SkipSpaces();
             if (ch == '}')
             {
                 Read();
@@ -587,14 +589,9 @@ namespace Sys.Text.Json
             object obj = null;
             while (ch < EOF)
             {
-#if FASTER_GETPROPINFO
-                var prop = typed ? FasterGetPropInfo(cached) : null;
-#else
-                var prop = (typed ? GetPropInfo(props) : null);
-#endif
-                var slot = !typed ? Parse(keyed) : null;
+                var slot = Parse(keyed);
                 Func<object, object> read = null;
-                Space();
+                SkipSpaces();
                 Next(':');
                 if (slot != null)
                 {
@@ -607,41 +604,21 @@ namespace Sys.Text.Json
                             if (key != null && (string.CompareOrdinal(key, TypeTag1) == 0 || string.CompareOrdinal(key, TypeTag2) == 0))
                             {
                                 obj = (key = val as string) != null ? (cached = types[Entry(Type.GetType(key, true))]).Ctor() : ctor();
-                                typed = !(obj is IDictionary);
+                               
                             }
                             else
                                 obj = ctor();
                         }
-                        if (!typed)
-                            ((IDictionary)obj).Add(slot, val);
+                        ((IDictionary)obj).Add(slot, val);
                     }
                     else
                         Val(0);
                 }
-                else if (prop != null)
-                {
-                    if (!isAnon)
-                    {
-                        if (@select == null || (read = @select(cached.Type, obj, prop.Name, -1)) != null)
-                        {
-                            if (Space() != 'n' || !types[prop.Outer].IsNullable)
-                            {
-                                obj = obj ?? ctor();
-                                prop.Set(obj, this, prop.Outer, 0);
-                            }
-                            else
-                                Null(0);
-                        }
-                        else
-                            Val(0);
-                    }
-                    else
-                        atargs[prop.Atm] = Parse(prop.Outer);
-                }
                 else
                     Val(0);
+
                 mapper = mapper ?? read;
-                ch = Space();
+                ch = SkipSpaces();
                 if (ch == '}')
                 {
                     mapper = mapper ?? Identity;
@@ -649,7 +626,7 @@ namespace Sys.Text.Json
                     return mapper(isAnon ? Cat(cached, atargs) : obj ?? ctor());
                 }
                 Next(',');
-                ch = Space();
+                ch = SkipSpaces();
             }
             throw Error("Bad object");
         }
@@ -665,7 +642,7 @@ namespace Sys.Text.Json
             var i = -1;
             if (ch != '[') throw Error("Bad array");
             Read();
-            ch = Space();
+            ch = SkipSpaces();
             var obj = cached.Ctor();
             if (ch == ']')
             {
@@ -690,7 +667,7 @@ namespace Sys.Text.Json
                 else
                     Val(0);
                 mapper = mapper ?? read;
-                ch = Space();
+                ch = SkipSpaces();
                 if (ch == ']')
                 {
                     mapper = mapper ?? Identity;
@@ -702,14 +679,14 @@ namespace Sys.Text.Json
                     return mapper(array);
                 }
                 Next(',');
-                ch = Space();
+                ch = SkipSpaces();
             }
             throw Error("Bad array");
         }
 
         private object Val(int outer)
         {
-            return parse[Space() & 0x7f](outer);
+            return parse[SkipSpaces() & 0x7f](outer);
         }
 
         private static Type GetElementType(Type type)
@@ -766,10 +743,22 @@ namespace Sys.Text.Json
                 bool dico = GetKeyValueTypes(type, out kt, out vt);
                 var et = !dico ? GetElementType(type) : null;
                 outer = rtti.Count;
-                types[outer] = (TypeInfo)Activator.CreateInstance(typeof(TypeInfo<>).MakeGenericType(type), BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { outer, et, kt, vt }, null);
+                types[outer] = (TypeInfo)Activator.CreateInstance(
+                    typeof(TypeInfo<>).MakeGenericType(type),
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    null, 
+                    new object[] { outer, et, kt, vt }, 
+                    null);
+
                 rtti.Add(type, outer);
-                types[outer].Inner = et != null ? Entry(et) : dico ? Entry(vt) :
-                    types[outer].IsNullable ? Entry(types[outer].VType) : 0;
+                types[outer].Inner =
+                    et != null ?
+                        Entry(et) : 
+                        dico ?
+                            Entry(vt) :
+                            types[outer].IsNullable ?
+                                Entry(types[outer].VType) : 
+                                0;
                 if (dico) types[outer].Key = Entry(kt);
             }
             
@@ -782,8 +771,9 @@ namespace Sys.Text.Json
             len = input.Length;
             txt = input;
             Reset(StringRead, StringNext, StringChar, StringSpace);
-            return typeof(T).IsValueType ?
-                ((TypeInfo<T>)types[outer]).Value(this, outer) :
+            return 
+                //typeof(T).IsValueType ? // T is always object
+                //((TypeInfo<T>)types[outer]).Value(this, outer) :
                 (T)Val(outer);
         }
 
@@ -808,7 +798,9 @@ namespace Sys.Text.Json
                 StringBufferLength = byte.MaxValue + 1,
                 TypeCacheCapacity = byte.MaxValue + 1
             };
+
             if (!options.Validate()) throw new ArgumentException("Invalid JSON parser options", "options");
+
             lbf = new char[lbs = options.StringBufferLength];
             types = new TypeInfo[options.TypeCacheCapacity];
             parse['n'] = Null;

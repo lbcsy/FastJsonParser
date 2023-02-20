@@ -2,6 +2,8 @@ using NUnit.Framework;
 using Sys.Text.Json;
 using Sys.Text.Json.JsonPath;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.JsonPath;
 using System.Text.Json.JsonPath.LambdaCompilation;
 
@@ -53,31 +55,55 @@ namespace PatherTests
                       { ""category"": ""fiction"",
                             ""author"": ""Evelyn Waugh"",
                             ""title"": ""Sword of Honour"",
-                            ""price"": 12.99
+                            ""price"": 12.99,
+                            ""onshell"": null
                       },
                       { ""category"": ""fiction"",
                             ""author"": ""Herman Melville"",
                             ""title"": ""Moby Dick"",
                             ""isbn"": ""0-553-21311-3"",
                             ""price"": 8.99,
-                            ""status"": ""Married""
+                            ""status"": ""Married"",
+                            ""onshell"": false
                       },
                       { ""category"": ""fiction"",
                             ""author"": ""J. R. R. Tolkien"",
                             ""title"": ""The Lord of the Rings"",
                             ""isbn"": ""0-395-19395-8"",
-                            ""price"": 22.99
+                            ""price"": 22.99,
+                            ""onshell"": true,
+                            ""borrowHistroy"":[]
                       }
                     ],
                     ""bicycle"": {
                       ""color"": ""red"",
-                      ""price"": 19.95
+                      ""price"": 19.95,
+                      ""nullable"": null,
+                      ""spares"":[""bell"",""brakeX2""]  ,
+                      ""travelDistances"":[10,14,9]
                     }
               }
             }
         ";
             var parser1 = new JsonPather();
             var untyped = parser1.Parse(input); // (object untyped = ...)
+            var dic = (Dictionary<string, object>)untyped;
+
+            Assert.IsTrue(dic.Count == 1);
+            dic = (Dictionary<string,object>)dic["store"];
+            Assert.IsTrue(dic.Count== 2);
+
+            var books=  dic["book"];
+
+            var book = ((IList<object>)books).ToArray()[2];
+            var bookProps = (Dictionary<string, object>)book;
+            Assert.IsTrue(bookProps["onshell"].ToString()=="false");
+            dic = (Dictionary<string, object>)dic["bicycle"];
+            Assert.IsTrue(dic.Count== 5);
+
+            Assert.IsNull(dic["nullable"]);
+
+
             JsonPathScriptEvaluator evaluator =
                 (script, value, context) =>
                     (value is Type)
@@ -94,7 +120,8 @@ namespace PatherTests
                 nodes != null&&
                 nodes.Length == 1 &&
                 nodes[0].Value is string &&
-                nodes[0].As<string>() == "The Lord of the Rings"
+                nodes[0].As<string>() == "The Lord of the Rings" 
+    
             );
 
             scope = new JsonPathSelection(untyped, evaluator); // Cache the JsonPathSelection and its lambdas compiled on-demand (at run-time) by the evaluator.
@@ -106,6 +133,7 @@ namespace PatherTests
                 nodes[0].Value is string &&
                 nodes[0].As<string>() == "The Lord of the Rings"
             );           
+
         }
     }
 }
