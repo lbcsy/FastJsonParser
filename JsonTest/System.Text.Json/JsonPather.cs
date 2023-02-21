@@ -461,67 +461,18 @@ namespace Sys.Text.Json
             throw Error(outer >= 0 ? "Bad string" : "Bad key");
         }
 
-#if !FASTER_GETPROPINFO
-        private ItemInfo GetPropInfo(ItemInfo[] a)
-        {
-            int ch = Space(), n = a.Length, c = 0, i = 0;
-            if (ch == '"')
-            {
-                Read();
-                while (true)
-                {
-                    if ((ch = chr) == '"')
-                    {
-                        Read();
-                        return (((i < n) && (c > 0)) ? a[i] : null);
-                    }
-                    bool e = ch == '\\';
-                    if (e)
-                        ch = Read();
-                    if (ch < EOF)
-                    {
-                        if (!e || (ch >= 128)) Read();
-                        else
-                        {
-                            ch = Esc(ch);
-                        }
-                    }
-                    else break;
-                    ItemInfo pi;
-                    while ((i < n) && ((c >= (pi = a[i]).Len) || (pi.Name[c] != ch))) i++;
-                    c++;
-                }
-            }
-            throw Error("Bad key");
-        }
-#else
-        private unsafe ItemInfo FasterGetPropInfo(TypeInfo type)
-        {
-            var p = type.Props; var m = type.Mlk; int ch = SkipSpaces(), l = type.Mnl, n = p.Length, i = 0;
-            if (ch == '"')
-            {
-                fixed (char* c = m)
-                {
-                    char* a = c, z = c + n * l;
-                    while (i <= n)
-                    {
-                        if ((ch = Read()) == '"') { Read(); return i < n && c < a ? p[i] : null; }
-                        while (*a != ch) { if (z <= a) break; a += l; i++; }
-                        a++;
-                    }
-                    return null;
-                }
-            }
-            throw Error("Bad key");
-        }
-#endif
-
         private object Error(int outer) { throw Error($"Bad value @outer={outer}"); }
-        private object Null(int outer) { Read(); Next('u'); Next('l'); Next('l'); return null; }
-        private object False(int outer) { Read(); Next('a'); Next('l'); Next('s'); Next('e'); return "false"; }
-        private object True(int outer) { Read(); Next('r'); Next('u'); Next('e'); return "true"; }
+        private object Null(int outer) { Read(); Next('u'); Next('l'); Next('l');
+            return new Dictionary<string, string>() { { "", "false" } };
+        }
+        private Dictionary<string, string> False(int outer) { Read(); Next('a'); Next('l'); Next('s'); Next('e');
+            return new Dictionary<string, string>() { { "", "false" } };
+        }
+        private Dictionary<string,string> True(int outer) { Read(); Next('r'); Next('u'); Next('e'); 
+            return new Dictionary<string, string>() { { "", "true" } }; 
+        }
 
-        private object Num(int outer)
+        private Dictionary<string,string> Num(int outer)
         {
             var ch = chr;
             lsb.Length = 0; lln = 0;
@@ -535,14 +486,22 @@ namespace Sys.Text.Json
                 while (ch >= '0' && ch <= '9') ch = Char(ch);
             }
             if (!b) throw Error("Bad number");
-            return lsb.Length > 0 ? lsb.ToString() : new string(lbf, 0, lln);
+            return new Dictionary<string, string>() { { "", lsb.Length > 0 ? lsb.ToString() : new string(lbf, 0, lln) } };
+            
         }
 
-        private object Str(int outer)
+        private Dictionary<string,string> Str(int outer)
         {
             var s = ParseString(0);
             if (outer != 2 || s != null && s.Length == 1)
-                return outer == 2 ? (object)s[0] : s;
+            {
+                var dic = new Dictionary<string, string>
+                {
+                    { "", s }
+                };
+                return dic;
+            }
+            
             throw Error("Bad character");
         }
 
@@ -586,10 +545,10 @@ namespace Sys.Text.Json
                 Read();
                 return isAnon ? Cat(cached, atargs) : ctor();
             }
-            object obj = null;
+            Dictionary<string,string> obj = null;
             while (ch < EOF)
             {
-                var slot = Parse(keyed);
+                ((Dictionary<string,string>) Parse(keyed)).TryGetValue("",out var slot );
                 Func<object, object> read = null;
                 SkipSpaces();
                 Next(':');
@@ -597,19 +556,21 @@ namespace Sys.Text.Json
                 {
                     if (@select == null || (read = @select(cached.Type, obj, slot, -1)) != null)
                     {
-                        var val = Parse(cached.Inner);
-                        var key = slot as string;
+                        Dictionary<string,string> val =(Dictionary<string,string>) Parse(cached.Inner);
                         if (obj == null)
                         {
-                            if (key != null && (string.CompareOrdinal(key, TypeTag1) == 0 || string.CompareOrdinal(key, TypeTag2) == 0))
-                            {
-                                obj = (key = val as string) != null ? (cached = types[Entry(Type.GetType(key, true))]).Ctor() : ctor();
-                               
-                            }
-                            else
-                                obj = ctor();
+                            
+                            obj = new Dictionary<string, string>();
                         }
-                        ((IDictionary)obj).Add(slot, val);
+                        foreach(var kv in val)
+                        {
+                            obj.Add($"{slot}"+
+                                (
+                                string.IsNullOrEmpty(kv.Key)?
+                                "":
+                                kv.Key[0]=='[' ?$"{kv.Key}":$".{kv.Key}"
+                                ), kv.Value);
+                        }                                                
                     }
                     else
                         Val(0);
@@ -623,7 +584,11 @@ namespace Sys.Text.Json
                 {
                     mapper = mapper ?? Identity;
                     Read();
-                    return mapper(isAnon ? Cat(cached, atargs) : obj ?? ctor());
+                    return mapper(isAnon ?
+                        Cat(cached, atargs) :
+                        
+                        obj 
+                        ?? ctor());
                 }
                 Next(',');
                 ch = SkipSpaces();
@@ -631,27 +596,22 @@ namespace Sys.Text.Json
             throw Error("Bad object");
         }
 
-        private object Arr(int outer)
+        private Dictionary<string,string> Arr(int outer)
         {
-            var cached = types[outer != 0 ? outer : 1]; var select = cached.Select; var dico = cached.Dico != null;
+            var cached = types[outer != 0 ? outer : 1]; 
+            var select = cached.Select; var dico = cached.Dico != null;
             var mapper = null as Func<object, object>;
-            var items = dico ? cached.Dico : cached.List;
             var val = cached.Inner;
-            var key = cached.Key;
             var ch = chr;
             var i = -1;
             if (ch != '[') throw Error("Bad array");
             Read();
             ch = SkipSpaces();
-            var obj = cached.Ctor();
+            var obj = new Dictionary<string, string>();
             if (ch == ']')
             {
                 Read();
-                if (!cached.Type.IsArray) return obj;
-                IList list = (IList)obj;
-                var array = Array.CreateInstance(cached.EType, list.Count);
-                list.CopyTo(array, 0);
-                return array;
+                return obj;
             }
             while (ch < EOF)
             {
@@ -660,10 +620,16 @@ namespace Sys.Text.Json
                 if (ch == 'n' && types[val].IsNullable && !dico)
                 {
                     Null(0);
-                    ((IList)obj).Add(null);
+                    obj.Add($"[{i}]", "null");
                 }
                 else if (dico || @select == null || (read = @select(cached.Type, obj, null, i)) != null)
-                    items.Set(obj, this, types[val].IsNullable ? types[val].Inner : val, types[key].IsNullable ? types[key].Inner : key);
+                {
+                    var value=(Dictionary<string,string>) Parse(cached.Inner);
+                    foreach (var kv in value)
+                    {
+                        obj.Add($"[{i}]" + (string.IsNullOrEmpty(kv.Key) ? "" : $".{kv.Key}"), kv.Value);
+                    }
+                }
                 else
                     Val(0);
                 mapper = mapper ?? read;
@@ -672,11 +638,8 @@ namespace Sys.Text.Json
                 {
                     mapper = mapper ?? Identity;
                     Read();
-                    if (!cached.Type.IsArray) return mapper(obj);
-                    IList list = (IList)obj;
-                    var array = Array.CreateInstance(cached.EType, list.Count);
-                    list.CopyTo(array, 0);
-                    return mapper(array);
+                    if (!cached.Type.IsArray) return obj;                  
+                    return obj;
                 }
                 Next(',');
                 ch = SkipSpaces();
@@ -725,7 +688,6 @@ namespace Sys.Text.Json
 
         private int Closure(int outer)
         {
-            IDictionary<Type, Func<Type, object, object, int, Func<object, object>>> filter=null;
             if (types[outer].Closed) return outer;
             var prop = types[outer].Props;
             types[outer].Closed = true;
@@ -765,16 +727,14 @@ namespace Sys.Text.Json
             return Closure(outer);
         }
 
-        private T DoParse<T>(string input )
+        private Dictionary<string,string> DoParse<T>(string input )
         {
             var outer = Entry(typeof(T));
             len = input.Length;
             txt = input;
             Reset(StringRead, StringNext, StringChar, StringSpace);
             return 
-                //typeof(T).IsValueType ? // T is always object
-                //((TypeInfo<T>)types[outer]).Value(this, outer) :
-                (T)Val(outer);
+                (Dictionary<string,string>)Val(outer);
         }
 
         private T DoParse<T>(TextReader input )
@@ -819,7 +779,7 @@ namespace Sys.Text.Json
             Entry(typeof(char));
         }
 
-        public object Parse(string input)
+        public Dictionary<string,string> Parse(string input)
         {             
             return Parse<object>(input); 
         }
@@ -834,12 +794,12 @@ namespace Sys.Text.Json
 
         public object Parse(Stream input, Encoding encoding, IDictionary<Type, Func<Type, object, object, int, Func<object, object>>> mappers) { return Parse<object>(input, encoding, mappers); }
 
-        public T Parse<T>(string input) 
+        public Dictionary<string,string> Parse<T>(string input) 
         {
             return Parse(default(T), input);
         }
 
-        public T Parse<T>(T prototype, string input)
+        public Dictionary<string,string> Parse<T>(T prototype, string input)
         {
             if (input == null) throw new ArgumentNullException("input", "cannot be null");
             return DoParse<T>(input);

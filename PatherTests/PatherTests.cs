@@ -87,53 +87,25 @@ namespace PatherTests
         ";
             var parser1 = new JsonPather();
             var untyped = parser1.Parse(input); // (object untyped = ...)
-            var dic = (Dictionary<string, object>)untyped;
+            var dic = untyped;
 
-            Assert.IsTrue(dic.Count == 1);
-            dic = (Dictionary<string,object>)dic["store"];
-            Assert.IsTrue(dic.Count== 2);
+            Assert.IsTrue(dic.Count > 1);
 
-            var books=  dic["book"];
+            var paths = dic.Keys.Where(k => k.Contains("store"));
+            Assert.AreEqual( 30, paths.Count());
 
-            var book = ((IList<object>)books).ToArray()[2];
-            var bookProps = (Dictionary<string, object>)book;
-            Assert.IsTrue(bookProps["onshell"].ToString()=="false");
-            dic = (Dictionary<string, object>)dic["bicycle"];
-            Assert.IsTrue(dic.Count== 5);
+            var books = dic.Keys.Where(k => k.Contains("book"));
 
-            Assert.IsNull(dic["nullable"]);
+            dic.TryGetValue(books.ToArray()[1],out var bookAuthor );
+            Assert.AreEqual("Nigel Rees", bookAuthor);           
+            
+            Assert.IsTrue(dic.TryGetValue("store.book[3].onshell", out var onshell));
+            Assert.AreEqual("true", onshell);
 
+            var bikes = dic.Keys.Where(k => k.Contains("bicycle"));
+            Assert.AreEqual(8, bikes.Count());
 
-            JsonPathScriptEvaluator evaluator =
-                (script, value, context) =>
-                    (value is Type)
-                    ? // This holds: (value as Type) == typeof(Func<string, T, IJsonPathContext, object>), with T inferred by JsonPathSelection::SelectNodes(...)
-                    ExpressionParser.Parse((Type)value, script, true, typeof(Data).Namespace).Compile()
-                    :
-                    null;
-            JsonPathSelection scope;
-            JsonPathNode[] nodes;
-
-            scope = new JsonPathSelection(untyped); // Cache the JsonPathSelection.
-            nodes = scope.SelectNodes("$.store.book[3].title"); // Normalized in bracket-notation: $['store']['book'][3]['title']
-            Assert.IsTrue(
-                nodes != null&&
-                nodes.Length == 1 &&
-                nodes[0].Value is string &&
-                nodes[0].As<string>() == "The Lord of the Rings" 
-    
-            );
-
-            scope = new JsonPathSelection(untyped, evaluator); // Cache the JsonPathSelection and its lambdas compiled on-demand (at run-time) by the evaluator.
-            nodes = scope.SelectNodes("$.store.book[?(@.ContainsKey(\"isbn\") && (string)@[\"isbn\"] == \"0-395-19395-8\")].title");
-            Assert.IsTrue
-            (
-                nodes != null &&
-                nodes.Length == 1 &&
-                nodes[0].Value is string &&
-                nodes[0].As<string>() == "The Lord of the Rings"
-            );           
-
+            Assert.AreEqual("store.bicycle.nullable", bikes.ToArray()[2]);  
         }
     }
 }
