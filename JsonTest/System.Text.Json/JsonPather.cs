@@ -490,8 +490,7 @@ namespace Sys.Text.Json
                 while (ch >= '0' && ch <= '9') ch = Char(ch);
             }
             if (!b) throw Error("Bad number");
-            return new Dictionary<string, string>() { { "", lsb.Length > 0 ? lsb.ToString() : new string(lbf, 0, lln) } };
-            
+            return new Dictionary<string, string>() { { "", lsb.Length > 0 ? lsb.ToString() : new string(lbf, 0, lln) } };            
         }
 
         private Dictionary<string,string> Str(int outer)
@@ -779,8 +778,7 @@ namespace Sys.Text.Json
                 parse[input] = parse[input] ?? Error;
             }
             Entry(typeof(object));
-            Entry(typeof(List<object>));
-            Entry(typeof(char));
+            Entry(typeof(List<object>));            
         }
 
         public Dictionary<string,string> Parse(string input)
