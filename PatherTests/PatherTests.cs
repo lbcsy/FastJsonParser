@@ -105,7 +105,9 @@ namespace PatherTests
             var bikes = dic.Keys.Where(k => k.Contains("bicycle"));
             Assert.AreEqual(8, bikes.Count());
 
-            Assert.AreEqual("store.bicycle.nullable", bikes.ToArray()[2]);  
+            Assert.AreEqual("store.bicycle.nullable", bikes.ToArray()[2]);
+            Assert.IsTrue(dic.TryGetValue("store.bicycle.nullable", out  onshell));
+            Assert.AreEqual("null", onshell);
         }
     }
 }

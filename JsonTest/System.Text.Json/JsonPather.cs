@@ -12,9 +12,6 @@ namespace Sys.Text.Json
 {
     public class JsonPather
     {
-        private const string TypeTag1 = "__type";
-        private const string TypeTag2 = "$type";
-
         private static readonly byte[] HEX = new byte[128];
         private static readonly bool[] HXD = new bool[128];
         private static readonly char[] ESC = new char[128];
@@ -111,7 +108,11 @@ namespace Sys.Text.Json
 
             private static Func<object> GetCtor(Type clr, bool list)
             {
-                var type = !list ? clr == typeof(object) ? typeof(Dictionary<string, object>) : clr : typeof(List<>).MakeGenericType(clr);
+                var type = !list ? 
+                    clr == typeof(object) ? 
+                    typeof(Dictionary<string, object>) : 
+                    clr : 
+                    typeof(List<>).MakeGenericType(clr);
                 var ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance, null, Type.EmptyTypes, null);
                 if (ctor != null)
                 {
@@ -457,13 +458,16 @@ namespace Sys.Text.Json
                 }
             }
             if (ch == 'n')
-                return (string)Null(0);
+            {
+                Null(0);
+                return "null"; 
+            }
             throw Error(outer >= 0 ? "Bad string" : "Bad key");
         }
 
         private object Error(int outer) { throw Error($"Bad value @outer={outer}"); }
-        private object Null(int outer) { Read(); Next('u'); Next('l'); Next('l');
-            return new Dictionary<string, string>() { { "", "false" } };
+        private Dictionary<string,string> Null(int outer) { Read(); Next('u'); Next('l'); Next('l');
+            return new Dictionary<string, string>() { { "", "null" } };
         }
         private Dictionary<string, string> False(int outer) { Read(); Next('a'); Next('l'); Next('s'); Next('e');
             return new Dictionary<string, string>() { { "", "false" } };
