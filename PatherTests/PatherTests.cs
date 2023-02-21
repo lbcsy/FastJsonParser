@@ -72,7 +72,7 @@ namespace PatherTests
                             ""isbn"": ""0-395-19395-8"",
                             ""price"": 22.99,
                             ""onshell"": true,
-                            ""borrowHistroy"":[]
+                            ""borrowHistroy"":[true, false]
                       }
                     ],
                     ""bicycle"": {
@@ -92,7 +92,7 @@ namespace PatherTests
             Assert.IsTrue(dic.Count > 1);
 
             var paths = dic.Keys.Where(k => k.Contains("store"));
-            Assert.AreEqual( 30, paths.Count());
+            Assert.AreEqual( 32, paths.Count());
 
             var books = dic.Keys.Where(k => k.Contains("book"));
 

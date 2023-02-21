@@ -601,10 +601,6 @@ namespace Sys.Text.Json
 
         private Dictionary<string,string> Arr(int outer)
         {
-            var cached = types[outer != 0 ? outer : 1]; 
-            var select = cached.Select; var dico = cached.Dico != null;
-            var mapper = null as Func<object, object>;
-            var val = cached.Inner;
             var ch = chr;
             var i = -1;
 
@@ -620,27 +616,25 @@ namespace Sys.Text.Json
             while (ch < EOF)
             {
                 i++;
-                if (ch == 'n' && types[val].IsNullable && !dico)
+                if (ch == 'n' )
                 {
                     Null(0);
                     obj.Add($"[{i}]", "null");
                 }
-                else if (dico || @select == null || @select(cached.Type, obj, null, i) != null)
+                else 
                 {
-                    var value=(Dictionary<string,string>) Parse(cached.Inner);
+                    var value=(Dictionary<string,string>) Parse(0);
                     foreach (var kv in value)
                     {
                         obj.Add($"[{i}]" + (string.IsNullOrEmpty(kv.Key) ? "" : $".{kv.Key}"), kv.Value);
                     }
                 }
-                else
-                    Val(0);
 
                 ch = SkipSpaces();
                 if (ch == ']')
                 {
                     Read();
-                    if (!cached.Type.IsArray) return obj;                  
+                                    
                     return obj;
                 }
                 Next(',');
