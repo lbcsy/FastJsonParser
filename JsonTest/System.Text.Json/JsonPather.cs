@@ -607,6 +607,7 @@ namespace Sys.Text.Json
             var val = cached.Inner;
             var ch = chr;
             var i = -1;
+
             if (ch != '[') throw Error("Bad array");
             Read();
             ch = SkipSpaces();
@@ -618,14 +619,13 @@ namespace Sys.Text.Json
             }
             while (ch < EOF)
             {
-                Func<object, object> read = null;
                 i++;
                 if (ch == 'n' && types[val].IsNullable && !dico)
                 {
                     Null(0);
                     obj.Add($"[{i}]", "null");
                 }
-                else if (dico || @select == null || (read = @select(cached.Type, obj, null, i)) != null)
+                else if (dico || @select == null || @select(cached.Type, obj, null, i) != null)
                 {
                     var value=(Dictionary<string,string>) Parse(cached.Inner);
                     foreach (var kv in value)
@@ -635,11 +635,10 @@ namespace Sys.Text.Json
                 }
                 else
                     Val(0);
-                mapper = mapper ?? read;
+
                 ch = SkipSpaces();
                 if (ch == ']')
                 {
-                    mapper = mapper ?? Identity;
                     Read();
                     if (!cached.Type.IsArray) return obj;                  
                     return obj;
