@@ -45,7 +45,9 @@ namespace PatherTests
         public void TestPatherString()
         {
             string input = @"
-              { ""store"": {
+              { 
+""emptyObject"":{},
+""store"": {
                     ""book"": [ 
                       { ""category"": ""reference"",
                             ""author"": ""Nigel\u2019 Rees"",
@@ -80,7 +82,8 @@ namespace PatherTests
                       ""price"": 19.95,
                       ""nullable"": null,
                       ""spares"":[""bell"",""brakeX2""]  ,
-                      ""travelDistances"":[10,14,9]
+                      ""travelDistances"":[10,14,9],
+                      ""emptyObject"":{}
                     }
               }
             }

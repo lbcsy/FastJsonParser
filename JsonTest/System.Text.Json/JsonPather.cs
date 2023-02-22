@@ -523,9 +523,9 @@ namespace Sys.Text.Json
             return Null(0);
         }
 
-        private object Obj(int outer)
+        private object Obj(int typeIdx)
         {
-            var cached = types[outer]; 
+            var cached = types[typeIdx]; 
             var isAnon = cached.IsAnonymous; 
             var hash = types[cached.KeyTypeIndex];
             var select = cached.Select; 
@@ -541,7 +541,8 @@ namespace Sys.Text.Json
             if (ch == '}')
             {
                 Read();
-                return isAnon ? Cat(cached, atargs) : ctor();
+                // empty object
+                return new Dictionary<string, string>();
             }
             Dictionary<string,string> obj = null;
             while (ch < EOF)
@@ -556,8 +557,7 @@ namespace Sys.Text.Json
                     {
                         Dictionary<string,string> val =(Dictionary<string,string>) Parse(cached.Inner);
                         if (obj == null)
-                        {
-                            
+                        {                            
                             obj = new Dictionary<string, string>();
                         }
                         foreach(var kv in val)
