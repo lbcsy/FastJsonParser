@@ -23,7 +23,7 @@ namespace Sys.Text.Json
         private readonly IDictionary<Type, int> rtti = new Dictionary<Type, int>();
         private readonly TypeInfo[] types;
 
-        private readonly Func<int, object>[] parse = new Func<int, object>[128];
+        private readonly Func<int, object>[] parseToType = new Func<int, object>[128];
         private readonly StringBuilder lsb = new StringBuilder();
         private readonly char[] stc = new char[1];
         private readonly char[] lbf;
@@ -82,7 +82,7 @@ namespace Sys.Text.Json
             internal Type EType;
             internal Type Type;
             internal int Inner;
-            internal int Key;
+            internal int KeyTypeIndex;
             internal int T;
 
             static TypeInfo()
@@ -523,7 +523,7 @@ namespace Sys.Text.Json
                     types[typed].IsNullable ?
                     types[types[typed].Inner].Parse(this, types[typed].Inner) :
                     types[typed].Parse(this, typed)
-                    : Val(typed);
+                    : SetObjectValueByTypeIdx(typed);
             return Null(0);
         }
 
@@ -531,7 +531,7 @@ namespace Sys.Text.Json
         {
             var cached = types[outer]; 
             var isAnon = cached.IsAnonymous; 
-            var hash = types[cached.Key];
+            var hash = types[cached.KeyTypeIndex];
             var select = cached.Select; 
             var props = cached.Props; 
             var ctor = cached.Ctor;
@@ -575,10 +575,10 @@ namespace Sys.Text.Json
                         }                                                
                     }
                     else
-                        Val(0);
+                        SetObjectValueByTypeIdx(0);
                 }
                 else
-                    Val(0);
+                    SetObjectValueByTypeIdx(0);
 
                 mapper = mapper ?? read;
                 ch = SkipSpaces();
@@ -642,18 +642,9 @@ namespace Sys.Text.Json
             throw Error("Bad array");
         }
 
-        private object Val(int outer)
+        private object SetObjectValueByTypeIdx(int typeIdx)
         {
-            return parse[SkipSpaces() & 0x7f](outer);
-        }
-
-        private static Type GetElementType(Type type)
-        {
-            if (type.IsArray)
-                return type.GetElementType();
-            if (type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type))
-                return type.IsGenericType ? type.GetGenericArguments()[0] : typeof(object);
-            return null;
+            return parseToType[SkipSpaces() & 0x7f](typeIdx);
         }
 
         private static Type Realizes(Type type, Type generic)
@@ -681,7 +672,7 @@ namespace Sys.Text.Json
             return kvPair;
         }
 
-        private int Closure(int outer)
+        private int BuildTypeInfoForProperties(int outer)
         {
             if (types[outer].Closed) return outer;
             var prop = types[outer].Props;
@@ -698,38 +689,35 @@ namespace Sys.Text.Json
             {
                 Type kt, vt;
                 bool isDictionaryObject = GetKeyValueTypes(type, out kt, out vt);
-                var elementType = !isDictionaryObject ? GetElementType(type) : null;
                 outer = rtti.Count;
                 types[outer] = (TypeInfo)Activator.CreateInstance(
                     typeof(TypeInfo<>).MakeGenericType(type),
                     BindingFlags.Instance | BindingFlags.NonPublic,
                     null, 
-                    new object[] { outer, elementType, kt, vt }, 
+                    new object[] { outer, null, kt, vt }, 
                     null);
 
                 rtti.Add(type, outer);
                 types[outer].Inner =
-                    elementType != null ?
-                        Entry(elementType) : 
                         isDictionaryObject ?
                             Entry(vt) :
                             types[outer].IsNullable ?
                                 Entry(types[outer].VType) : 
                                 0;
-                if (isDictionaryObject) types[outer].Key = Entry(kt);
+                if (isDictionaryObject) types[outer].KeyTypeIndex = Entry(kt);
             }
             
-            return Closure(outer);
+            return BuildTypeInfoForProperties(outer);
         }
 
         private Dictionary<string,string> DoParse<T>(string input )
         {
-            var outer = Entry(typeof(T));
+            var typeIdx = Entry(typeof(T));
             len = input.Length;
             txt = input;
             Reset(StringRead, StringNext, StringChar, StringSpace);
             return 
-                (Dictionary<string,string>)Val(outer);
+                (Dictionary<string,string>)SetObjectValueByTypeIdx(typeIdx);
         }
 
         private T DoParse<T>(TextReader input )
@@ -737,7 +725,7 @@ namespace Sys.Text.Json
             var outer = Entry(typeof(T));
             str = input;
             Reset(StreamRead, StreamNext, StreamChar, StreamSpace);
-            return typeof(T).IsValueType ? ((TypeInfo<T>)types[outer]).Value(this, outer) : (T)Val(outer);
+            return typeof(T).IsValueType ? ((TypeInfo<T>)types[outer]).Value(this, outer) : (T)SetObjectValueByTypeIdx(outer);
         }
 
         public static object Identity(object obj) { return obj; }
@@ -758,19 +746,17 @@ namespace Sys.Text.Json
 
             lbf = new char[lbs = options.StringBufferLength];
             types = new TypeInfo[options.TypeCacheCapacity];
-            parse['n'] = Null;
-            parse['f'] = False;
-            parse['t'] = True;
-            parse['0'] = parse['1'] = parse['2'] = parse['3'] = parse['4'] = parse['5'] = parse['6'] = parse['7'] = parse['8'] = parse['9'] = parse['-'] = Num;
-            parse['"'] = Str;
-            parse['{'] = Obj;
-            parse['['] = Arr;
+            parseToType['n'] = Null;
+            parseToType['f'] = False;
+            parseToType['t'] = True;
+            parseToType['0'] = parseToType['1'] = parseToType['2'] = parseToType['3'] = parseToType['4'] = parseToType['5'] = parseToType['6'] = parseToType['7'] = parseToType['8'] = parseToType['9'] = parseToType['-'] = Num;
+            parseToType['"'] = Str;
+            parseToType['{'] = Obj;
+            parseToType['['] = Arr;
             for (var input = 0; input < 128; input++)
             {
-                parse[input] = parse[input] ?? Error;
-            }
-            //Entry(typeof(object));
-            //Entry(typeof(List<object>));            
+                parseToType[input] = parseToType[input] ?? Error;
+            }           
         }
 
         public Dictionary<string,string> Parse(string input)
