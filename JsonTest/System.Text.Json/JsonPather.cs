@@ -492,19 +492,15 @@ namespace Sys.Text.Json
             return new Dictionary<string, string>() { { "", lsb.Length > 0 ? lsb.ToString() : new string(lbf, 0, lln) } };            
         }
 
-        private Dictionary<string,string> Str(int outer)
+        private Dictionary<string,string> Str(int typeIdx)
         {
             var s = ParseString(0);
-            if (outer != 2 || s != null && s.Length == 1)
-            {
-                var dic = new Dictionary<string, string>
-                {
-                    { "", s }
-                };
-                return dic;
-            }
             
-            throw Error("Bad character");
+            var dic = new Dictionary<string, string>
+            {
+                { "", s }
+            };
+            return dic;           
         }
 
         private static object Cat(TypeInfo atinfo, object[] atargs)
