@@ -48,7 +48,7 @@ namespace PatherTests
               { ""store"": {
                     ""book"": [ 
                       { ""category"": ""reference"",
-                            ""author"": ""Nigel Rees"",
+                            ""author"": ""Nigel\u2019 Rees"",
                             ""title"": ""Sayings of the Century"",
                             ""price"": 8.95
                       },
@@ -97,7 +97,7 @@ namespace PatherTests
             var books = dic.Keys.Where(k => k.Contains("book"));
 
             dic.TryGetValue(books.ToArray()[1],out var bookAuthor );
-            Assert.AreEqual("Nigel Rees", bookAuthor);           
+            Assert.AreEqual("Nigel’ Rees", bookAuthor);           
             
             Assert.IsTrue(dic.TryGetValue("store.book[3].onshell", out var onshell));
             Assert.AreEqual("true", onshell);

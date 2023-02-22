@@ -426,7 +426,6 @@ namespace Sys.Text.Json
             Char(ch);
         }
 
-
         private string ParseString(int outer)
         {
             var ch = SkipSpaces();
@@ -698,26 +697,26 @@ namespace Sys.Text.Json
             if (!rtti.TryGetValue(type, out outer))
             {
                 Type kt, vt;
-                bool dico = GetKeyValueTypes(type, out kt, out vt);
-                var et = !dico ? GetElementType(type) : null;
+                bool isDictionaryObject = GetKeyValueTypes(type, out kt, out vt);
+                var elementType = !isDictionaryObject ? GetElementType(type) : null;
                 outer = rtti.Count;
                 types[outer] = (TypeInfo)Activator.CreateInstance(
                     typeof(TypeInfo<>).MakeGenericType(type),
                     BindingFlags.Instance | BindingFlags.NonPublic,
                     null, 
-                    new object[] { outer, et, kt, vt }, 
+                    new object[] { outer, elementType, kt, vt }, 
                     null);
 
                 rtti.Add(type, outer);
                 types[outer].Inner =
-                    et != null ?
-                        Entry(et) : 
-                        dico ?
+                    elementType != null ?
+                        Entry(elementType) : 
+                        isDictionaryObject ?
                             Entry(vt) :
                             types[outer].IsNullable ?
                                 Entry(types[outer].VType) : 
                                 0;
-                if (dico) types[outer].Key = Entry(kt);
+                if (isDictionaryObject) types[outer].Key = Entry(kt);
             }
             
             return Closure(outer);
@@ -770,8 +769,8 @@ namespace Sys.Text.Json
             {
                 parse[input] = parse[input] ?? Error;
             }
-            Entry(typeof(object));
-            Entry(typeof(List<object>));            
+            //Entry(typeof(object));
+            //Entry(typeof(List<object>));            
         }
 
         public Dictionary<string,string> Parse(string input)
