@@ -23,7 +23,7 @@ namespace Sys.Text.Json
         private readonly IDictionary<Type, int> rtti = new Dictionary<Type, int>();
         private readonly TypeInfo[] types;
 
-        private readonly Func<int, object>[] parseToType = new Func<int, object>[128];
+        private readonly Func<int, object>[] valueLexer = new Func<int, object>[128];
         private readonly StringBuilder lsb = new StringBuilder();
         private readonly char[] stc = new char[1];
         private readonly char[] lbf;
@@ -64,8 +64,6 @@ namespace Sys.Text.Json
 
             internal Func<Type, object, object, int, Func<object, object>> Select;
             internal Func<JsonPather, int, object> Parse;
-            internal Func<object> Ctor;
-            internal EnumInfo[] Enums;
             internal ItemInfo[] Props;
 #if FASTER_GETPROPINFO
             internal char[] Mlk;
@@ -75,14 +73,9 @@ namespace Sys.Text.Json
             internal ItemInfo List;
             internal bool IsAnonymous;
             internal bool IsNullable;
-            internal bool IsStruct;
-            internal bool IsEnum;
-            internal bool Closed;
-            internal Type VType;
             internal Type EType;
             internal Type Type;
             internal int Inner;
-            internal int KeyTypeIndex;
             internal int T;
 
             static TypeInfo()
@@ -104,43 +97,6 @@ namespace Sys.Text.Json
                 WellKnown.Add(typeof(DateTime));
                 WellKnown.Add(typeof(DateTimeOffset));
                 WellKnown.Add(typeof(string));
-            }
-
-            private static Func<object> GetCtor(Type clr, bool list)
-            {
-                var type = !list ? 
-                    clr == typeof(object) ? 
-                    typeof(Dictionary<string, object>) : 
-                    clr : 
-                    typeof(List<>).MakeGenericType(clr);
-                var ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance, null, Type.EmptyTypes, null);
-                if (ctor != null)
-                {
-                    var dyn = new System.Reflection.Emit.DynamicMethod("", typeof(object), null, typeof(string), true);
-                    var il = dyn.GetILGenerator();
-                    il.Emit(System.Reflection.Emit.OpCodes.Newobj, ctor);
-                    il.Emit(System.Reflection.Emit.OpCodes.Ret);
-                    return (Func<object>)dyn.CreateDelegate(typeof(Func<object>));
-                }
-                return null;
-            }
-
-            private static Func<object> GetCtor(Type clr, Type key, Type value)
-            {
-                var type = typeof(Dictionary<,>).MakeGenericType(key, value);
-                var ctor = (type != clr && clr.IsClass ? clr : type).GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance, null, Type.EmptyTypes, null);
-                var dyn = new System.Reflection.Emit.DynamicMethod("", typeof(object), null, typeof(string), true);
-                var il = dyn.GetILGenerator();
-                il.Emit(System.Reflection.Emit.OpCodes.Newobj, ctor);
-                il.Emit(System.Reflection.Emit.OpCodes.Ret);
-                return (Func<object>)dyn.CreateDelegate(typeof(Func<object>));
-            }
-
-            private static EnumInfo[] GetEnumInfos(Type type)
-            {
-                var actual = type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) ? type.GetGenericArguments()[0] : type;
-                var einfo = Enum.GetNames(actual).ToDictionary(name => name, name => new EnumInfo { Name = name, Value = Enum.Parse(actual, name), Len = name.Length });
-                return einfo.OrderBy(pair => pair.Key).Select(pair => pair.Value).ToArray();
             }
 
             private ItemInfo GetItemInfo(Type type, string name, MethodInfo setter)
@@ -260,15 +216,13 @@ namespace Sys.Text.Json
                 var props = self > 2 ? type.GetProperties(BindingFlags.Instance | BindingFlags.Public) : new PropertyInfo[] { };
                 var infos = new Dictionary<string, ItemInfo>();
                 IsAnonymous = eType == null && type.Name[0] == '<' && type.IsSealed;
-                IsStruct = type.IsValueType;
-                IsNullable = type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
-                IsEnum = IsNullable ? (VType = type.GetGenericArguments()[0]).IsEnum : type.IsEnum;
+                IsNullable = false;
+                
                 EType = eType;
                 Type = type;
                 T = self;
                 if (!IsAnonymous)
                 {
-                    Ctor = kType != null && vType != null ? GetCtor(Type, kType, vType) : GetCtor(EType ?? Type, EType != null);
                     foreach (PropertyInfo property in props)
                     {
                         PropertyInfo pi;
@@ -278,7 +232,7 @@ namespace Sys.Text.Json
                     }
                     Dico = kType != null && vType != null ? GetItemInfo(Type, kType, vType, typeof(Dictionary<,>).MakeGenericType(kType, vType).GetMethod("Add", BindingFlags.Instance | BindingFlags.Public)) : null;
                     List = EType != null ? GetItemInfo(EType, string.Empty, typeof(List<>).MakeGenericType(EType).GetMethod("Add", BindingFlags.Instance | BindingFlags.Public)) : null;
-                    Enums = IsEnum ? GetEnumInfos(Type) : null;
+                    
                 }
                 else
                 {
@@ -503,35 +457,17 @@ namespace Sys.Text.Json
             return dic;           
         }
 
-        private static object Cat(TypeInfo atinfo, object[] atargs)
-        {
-            foreach (var prop in atinfo.Props.Where(prop => prop.Type.IsValueType && atargs[prop.Atm] == null))
-            {
-                atargs[prop.Atm] = Activator.CreateInstance(prop.Type);
-            }
-            return Activator.CreateInstance(atinfo.Type, atargs);
-        }
-
         private object Parse(int typed)
         {
-            if (SkipSpaces() != 'n' || !types[typed].IsNullable)
-                return types[typed].Type.IsValueType ?
-                    types[typed].IsNullable ?
-                    types[types[typed].Inner].Parse(this, types[typed].Inner) :
-                    types[typed].Parse(this, typed)
-                    : SetObjectValueByTypeIdx(typed);
-            return Null(0);
+            return 
+                    GetValueByTypeIdx(typed);
         }
 
         private object Obj(int typeIdx)
         {
             var cached = types[typeIdx]; 
-            var isAnon = cached.IsAnonymous; 
-            var hash = types[cached.KeyTypeIndex];
-            var select = cached.Select; 
-            var props = cached.Props; 
-            var ctor = cached.Ctor;
-            var atargs = isAnon ? new object[props.Length] : null;
+            var hash = types[0];
+            
             var mapper = null as Func<object, object>;
             var keyed = hash.T;
             var ch = chr;
@@ -553,7 +489,7 @@ namespace Sys.Text.Json
                 Next(':');
                 if (slot != null)
                 {
-                    if (@select == null || (read = @select(cached.Type, obj, slot, -1)) != null)
+                    //if (@select == null || (read = @select(cached.Type, obj, slot, -1)) != null)
                     {
                         Dictionary<string,string> val =(Dictionary<string,string>) Parse(cached.Inner);
                         if (obj == null)
@@ -570,11 +506,11 @@ namespace Sys.Text.Json
                                 ), kv.Value);
                         }                                                
                     }
-                    else
-                        SetObjectValueByTypeIdx(0);
+                    //else
+                    //    GetValueByTypeIdx(0);
                 }
                 else
-                    SetObjectValueByTypeIdx(0);
+                    GetValueByTypeIdx(0);
 
                 mapper = mapper ?? read;
                 ch = SkipSpaces();
@@ -582,11 +518,9 @@ namespace Sys.Text.Json
                 {
                     mapper = mapper ?? Identity;
                     Read();
-                    return mapper(isAnon ?
-                        Cat(cached, atargs) :
-                        
+                    return mapper(                        
                         obj 
-                        ?? ctor());
+                        );
                 }
                 Next(',');
                 ch = SkipSpaces();
@@ -638,72 +572,28 @@ namespace Sys.Text.Json
             throw Error("Bad array");
         }
 
-        private object SetObjectValueByTypeIdx(int typeIdx)
+        private object GetValueByTypeIdx(int typeIdx)
         {
-            return parseToType[SkipSpaces() & 0x7f](typeIdx);
-        }
-
-        private static Type Realizes(Type type, Type generic)
-        {
-            while (true)
-            {
-                var itfs = type.GetInterfaces();
-                if (itfs.Any(it => it.IsGenericType && it.GetGenericTypeDefinition() == generic))
-                {
-                    return type;
-                }
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == generic)
-                    return type;
-                if (type.BaseType == null) return null;
-                type = type.BaseType;
-            }
-        }
-
-        private static bool GetKeyValueTypes(Type type, out Type key, out Type value)
-        {
-            var generic = Realizes(type, typeof(Dictionary<,>)) ?? Realizes(type, typeof(IDictionary<,>));
-            var kvPair = generic != null && generic.GetGenericArguments().Length == 2;
-            value = kvPair ? generic.GetGenericArguments()[1] : null;
-            key = kvPair ? generic.GetGenericArguments()[0] : null;
-            return kvPair;
-        }
-
-        private int BuildTypeInfoForProperties(int outer)
-        {
-            if (types[outer].Closed) return outer;
-            var prop = types[outer].Props;
-            types[outer].Closed = true;
-            foreach (ItemInfo p in prop)
-                p.Outer = Entry(p.Type);
-            return outer;
+            return valueLexer[SkipSpaces() & 0x7f](typeIdx);
         }
 
         private int Entry(Type type)
         {
-            int outer;
-            if (!rtti.TryGetValue(type, out outer))
+            if (!rtti.TryGetValue(type, out int outer))
             {
-                Type kt, vt;
-                bool isDictionaryObject = GetKeyValueTypes(type, out kt, out vt);
                 outer = rtti.Count;
                 types[outer] = (TypeInfo)Activator.CreateInstance(
                     typeof(TypeInfo<>).MakeGenericType(type),
                     BindingFlags.Instance | BindingFlags.NonPublic,
-                    null, 
-                    new object[] { outer, null, kt, vt }, 
+                    null,
+                    new object[] { outer, null, null, null },
                     null);
 
                 rtti.Add(type, outer);
-                types[outer].Inner =
-                        isDictionaryObject ?
-                            Entry(vt) :
-                            types[outer].IsNullable ?
-                                Entry(types[outer].VType) : 
-                                0;
-                if (isDictionaryObject) types[outer].KeyTypeIndex = Entry(kt);
+                types[outer].Inner =0;
             }
-            
-            return BuildTypeInfoForProperties(outer);
+
+            return outer;
         }
 
         private Dictionary<string,string> DoParse<T>(string input )
@@ -713,7 +603,7 @@ namespace Sys.Text.Json
             txt = input;
             Reset(StringRead, StringNext, StringChar, StringSpace);
             return 
-                (Dictionary<string,string>)SetObjectValueByTypeIdx(typeIdx);
+                (Dictionary<string,string>)GetValueByTypeIdx(typeIdx);
         }
 
         private T DoParse<T>(TextReader input )
@@ -721,12 +611,10 @@ namespace Sys.Text.Json
             var outer = Entry(typeof(T));
             str = input;
             Reset(StreamRead, StreamNext, StreamChar, StreamSpace);
-            return typeof(T).IsValueType ? ((TypeInfo<T>)types[outer]).Value(this, outer) : (T)SetObjectValueByTypeIdx(outer);
+            return  (T)GetValueByTypeIdx(0);
         }
 
         public static object Identity(object obj) { return obj; }
-
-        public static readonly Func<object, object> Skip = null;
 
         public JsonPather() : this(null) { }
 
@@ -742,16 +630,16 @@ namespace Sys.Text.Json
 
             lbf = new char[lbs = options.StringBufferLength];
             types = new TypeInfo[options.TypeCacheCapacity];
-            parseToType['n'] = Null;
-            parseToType['f'] = False;
-            parseToType['t'] = True;
-            parseToType['0'] = parseToType['1'] = parseToType['2'] = parseToType['3'] = parseToType['4'] = parseToType['5'] = parseToType['6'] = parseToType['7'] = parseToType['8'] = parseToType['9'] = parseToType['-'] = Num;
-            parseToType['"'] = Str;
-            parseToType['{'] = Obj;
-            parseToType['['] = Arr;
+            valueLexer['n'] = Null;
+            valueLexer['f'] = False;
+            valueLexer['t'] = True;
+            valueLexer['0'] = valueLexer['1'] = valueLexer['2'] = valueLexer['3'] = valueLexer['4'] = valueLexer['5'] = valueLexer['6'] = valueLexer['7'] = valueLexer['8'] = valueLexer['9'] = valueLexer['-'] = Num;
+            valueLexer['"'] = Str;
+            valueLexer['{'] = Obj;
+            valueLexer['['] = Arr;
             for (var input = 0; input < 128; input++)
             {
-                parseToType[input] = parseToType[input] ?? Error;
+                valueLexer[input] = valueLexer[input] ?? Error;
             }           
         }
 
