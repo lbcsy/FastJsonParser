@@ -20,9 +20,6 @@ namespace Sys.Text.Json
         private const int EOF = char.MaxValue + 1;
         private const int ANY = 0;
 
-        private readonly IDictionary<Type, int> rtti = new Dictionary<Type, int>();
-        private readonly TypeInfo[] types;
-
         private readonly Func<int, object>[] valueLexer = new Func<int, object>[128];
         private readonly StringBuilder lsb = new StringBuilder();
         private readonly char[] stc = new char[1];
@@ -48,235 +45,6 @@ namespace Sys.Text.Json
             internal Type Type;
             internal int Len;
             internal int Atm;
-        }
-
-        internal class TypeInfo
-        {
-            private static readonly HashSet<Type> WellKnown = new HashSet<Type>();
-
-            internal Func<JsonPather, int, object> Parse;
-            internal ItemInfo[] Props;
-#if FASTER_GETPROPINFO
-            internal char[] Mlk;
-            internal int Mnl;
-#endif
-            internal ItemInfo Dico;
-            internal ItemInfo List;
-            internal bool IsAnonymous;
-            internal bool IsNullable;
-            internal Type EType;
-            internal Type Type;
-            internal int Inner;
-            internal int T;
-
-            static TypeInfo()
-            {
-                WellKnown.Add(typeof(bool));
-                WellKnown.Add(typeof(char));
-                WellKnown.Add(typeof(sbyte));
-                WellKnown.Add(typeof(byte));
-                WellKnown.Add(typeof(short));
-                WellKnown.Add(typeof(ushort));
-                WellKnown.Add(typeof(int));
-                WellKnown.Add(typeof(uint));
-                WellKnown.Add(typeof(long));
-                WellKnown.Add(typeof(ulong));
-                WellKnown.Add(typeof(float));
-                WellKnown.Add(typeof(double));
-                WellKnown.Add(typeof(decimal));
-                WellKnown.Add(typeof(Guid));
-                WellKnown.Add(typeof(DateTime));
-                WellKnown.Add(typeof(DateTimeOffset));
-                WellKnown.Add(typeof(string));
-            }
-
-            private ItemInfo GetItemInfo(Type type, string name, MethodInfo setter)
-            {
-                var method = new System.Reflection.Emit.DynamicMethod("Set" + name, null, new[] { typeof(object), typeof(JsonPather), typeof(int), typeof(int) }, typeof(string), true);
-                var nType = type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) ? new[] { type.GetGenericArguments()[0] } : null;
-                var parse = GetParserParse(GetParseName(type));
-                var il = method.GetILGenerator();
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_2);
-                il.Emit(System.Reflection.Emit.OpCodes.Callvirt, parse);
-                if (type.IsValueType && parse.ReturnType == typeof(object))
-                    il.Emit(System.Reflection.Emit.OpCodes.Unbox_Any, type);
-                if (parse.ReturnType.IsValueType && type == typeof(object))
-                    il.Emit(System.Reflection.Emit.OpCodes.Box, parse.ReturnType);
-                if (nType != null)
-                {
-                    var con = typeof(Nullable<>).MakeGenericType(nType).GetConstructor(nType);
-                    if (con != null)
-                        il.Emit(System.Reflection.Emit.OpCodes.Newobj, con);
-                }
-                il.Emit(System.Reflection.Emit.OpCodes.Callvirt, setter);
-                il.Emit(System.Reflection.Emit.OpCodes.Ret);
-                return new ItemInfo { Type = type, Name = name, Set = (Action<object, JsonPather, int, int>)method.CreateDelegate(typeof(Action<object, JsonPather, int, int>)), Len = name.Length };
-            }
-
-            private ItemInfo GetItemInfo(Type type, Type key, Type value, MethodInfo setter)
-            {
-                var method = new System.Reflection.Emit.DynamicMethod("Add", null, new[] { typeof(object), typeof(JsonPather), typeof(int), typeof(int) }, typeof(string), true);
-                var sBrace = typeof(JsonPather).GetMethod("SBrace", BindingFlags.Instance | BindingFlags.NonPublic);
-                var eBrace = typeof(JsonPather).GetMethod("EBrace", BindingFlags.Instance | BindingFlags.NonPublic);
-                var kColon = typeof(JsonPather).GetMethod("KColon", BindingFlags.Instance | BindingFlags.NonPublic);
-                var sComma = typeof(JsonPather).GetMethod("SComma", BindingFlags.Instance | BindingFlags.NonPublic);
-                var vnType = value.IsGenericType && value.GetGenericTypeDefinition() == typeof(Nullable<>) ? new[] { value.GetGenericArguments()[0] } : null;
-                var knType = key.IsGenericType && key.GetGenericTypeDefinition() == typeof(Nullable<>) ? new[] { key.GetGenericArguments()[0] } : null;
-                var vParse = GetParserParse(GetParseName(value));
-                var kParse = GetParserParse(GetParseName(key));
-                var il = method.GetILGenerator();
-                il.DeclareLocal(key);
-                il.DeclareLocal(value);
-
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
-                il.Emit(System.Reflection.Emit.OpCodes.Callvirt, sBrace);
-
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
-                il.Emit(System.Reflection.Emit.OpCodes.Callvirt, kColon);
-
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_3);
-                il.Emit(System.Reflection.Emit.OpCodes.Callvirt, kParse);
-                if (key.IsValueType && kParse.ReturnType == typeof(object))
-                    il.Emit(System.Reflection.Emit.OpCodes.Unbox_Any, key);
-                if (kParse.ReturnType.IsValueType && key == typeof(object))
-                    il.Emit(System.Reflection.Emit.OpCodes.Box, kParse.ReturnType);
-                if (knType != null)
-                {
-                    var con = typeof(Nullable<>).MakeGenericType(knType).GetConstructor(knType);
-                    if (con != null)
-                        il.Emit(System.Reflection.Emit.OpCodes.Newobj, con);
-                }
-
-                il.Emit(System.Reflection.Emit.OpCodes.Stloc_0);
-
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
-                il.Emit(System.Reflection.Emit.OpCodes.Callvirt, sComma);
-
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
-                il.Emit(System.Reflection.Emit.OpCodes.Callvirt, kColon);
-
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_2);
-                il.Emit(System.Reflection.Emit.OpCodes.Callvirt, vParse);
-                if (value.IsValueType && vParse.ReturnType == typeof(object))
-                    il.Emit(System.Reflection.Emit.OpCodes.Unbox_Any, value);
-                if (vParse.ReturnType.IsValueType && value == typeof(object))
-                    il.Emit(System.Reflection.Emit.OpCodes.Box, vParse.ReturnType);
-                if (vnType != null)
-                {
-                    var con = typeof(Nullable<>).MakeGenericType(vnType).GetConstructor(vnType);
-                    if (con != null)
-                        il.Emit(System.Reflection.Emit.OpCodes.Newobj, con);
-                }
-                il.Emit(System.Reflection.Emit.OpCodes.Stloc_1);
-
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
-                il.Emit(System.Reflection.Emit.OpCodes.Callvirt, eBrace);
-
-                il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
-                il.Emit(System.Reflection.Emit.OpCodes.Ldloc_0);
-                il.Emit(System.Reflection.Emit.OpCodes.Ldloc_1);
-                il.Emit(System.Reflection.Emit.OpCodes.Callvirt, setter);
-                il.Emit(System.Reflection.Emit.OpCodes.Ret);
-                return new ItemInfo { Type = type, Name = string.Empty, Set = (Action<object, JsonPather, int, int>)method.CreateDelegate(typeof(Action<object, JsonPather, int, int>)) };
-            }
-
-            private static Type GetEnumUnderlyingType(Type enumType)
-            {
-                return enumType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)[0].FieldType;
-            }
-
-            protected string GetParseName(Type type)
-            {
-                var actual = type.IsGenericType && type.GetGenericTypeDefinition()
-                    == typeof(Nullable<>) ? type.GetGenericArguments()[0] : type;
-                var name = !WellKnown.Contains(actual) ? actual.IsEnum && WellKnown.Contains(GetEnumUnderlyingType(actual)) ? GetEnumUnderlyingType(actual).Name : null : actual.Name;
-                return name != null ? string.Concat("Parse", name) : null;
-            }
-
-            protected MethodInfo GetParserParse(string pName)
-            {
-                return typeof(JsonPather).GetMethod(pName ?? "Val", BindingFlags.Instance | BindingFlags.NonPublic);
-            }
-
-            protected TypeInfo(Type type, int self, Type eType, Type kType, Type vType)
-            {
-                var props = self > 2 ? type.GetProperties(BindingFlags.Instance | BindingFlags.Public) : new PropertyInfo[] { };
-                var infos = new Dictionary<string, ItemInfo>();
-                IsAnonymous = eType == null && type.Name[0] == '<' && type.IsSealed;
-                IsNullable = false;
-                
-                EType = eType;
-                Type = type;
-                T = self;
-                if (!IsAnonymous)
-                {
-                    foreach (PropertyInfo property in props)
-                    {
-                        PropertyInfo pi;
-                        MethodInfo set;
-                        if ((pi = property).CanWrite && (set = pi.GetSetMethod()).GetParameters().Length == 1)
-                            infos.Add(pi.Name, GetItemInfo(pi.PropertyType, pi.Name, set));
-                    }
-                    Dico = kType != null && vType != null ? GetItemInfo(Type, kType, vType, typeof(Dictionary<,>).MakeGenericType(kType, vType).GetMethod("Add", BindingFlags.Instance | BindingFlags.Public)) : null;
-                    List = EType != null ? GetItemInfo(EType, string.Empty, typeof(List<>).MakeGenericType(EType).GetMethod("Add", BindingFlags.Instance | BindingFlags.Public)) : null;
-                    
-                }
-                else
-                {
-                    var args = type.GetConstructors()[0].GetParameters();
-                    for (var i = 0; i < args.Length; i++) infos.Add(args[i].Name, new ItemInfo { Type = args[i].ParameterType, Name = args[i].Name, Atm = i, Len = args[i].Name.Length });
-                }
-                Props = infos.OrderBy(pair => pair.Key).Select(pair => pair.Value).ToArray();
-#if FASTER_GETPROPINFO
-                if (Props.Length > 0)
-                {
-                    Mnl = Props.Max(p => p.Name.Length) + 1;
-                    Mlk = new char[Mnl * (Props.Length + 1)];
-                    for (var i = 0; i < Props.Length; i++)
-                    {
-                        var p = Props[i]; var n = p.Name; var l = n.Length;
-                        n.CopyTo(0, Mlk, Mnl * i, l);
-                    }
-                }
-                else
-                {
-                    Mnl = 1;
-                    Mlk = new char[1];
-                }
-#endif
-            }
-        }
-
-        internal class TypeInfo<T> : TypeInfo
-        {
-            internal Func<JsonPather, int, T> Value;
-
-            private Func<JsonPather, int, R> GetParseFunc<R>(string pName)
-            {
-                var parse = GetParserParse(pName ?? "Key");
-                if (parse != null)
-                {
-                    var method = new System.Reflection.Emit.DynamicMethod(parse.Name, typeof(R), new[] { typeof(JsonPather), typeof(int) }, typeof(string), true);
-                    var il = method.GetILGenerator();
-                    il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
-                    il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
-                    il.Emit(System.Reflection.Emit.OpCodes.Callvirt, parse);
-                    il.Emit(System.Reflection.Emit.OpCodes.Ret);
-                    return (Func<JsonPather, int, R>)method.CreateDelegate(typeof(Func<JsonPather, int, R>));
-                }
-                return null;
-            }
-
-            internal TypeInfo(int self, Type eType, Type kType, Type vType)
-                : base(typeof(T), self, eType, kType, vType)
-            {
-                var value = Value = GetParseFunc<T>(GetParseName(typeof(T)));
-                Parse = (parser, outer) => value(parser, outer);
-            }
         }
 
         static JsonPather()
@@ -556,44 +324,21 @@ namespace Sys.Text.Json
             return valueLexer[SkipSpaces() & 0x7f](typeIdx);
         }
 
-        private int Entry(Type type)
-        {
-            if (!rtti.TryGetValue(type, out int outer))
-            {
-                outer = rtti.Count;
-                types[outer] = (TypeInfo)Activator.CreateInstance(
-                    typeof(TypeInfo<>).MakeGenericType(type),
-                    BindingFlags.Instance | BindingFlags.NonPublic,
-                    null,
-                    new object[] { outer, null, null, null },
-                    null);
-
-                rtti.Add(type, outer);
-                types[outer].Inner =0;
-            }
-
-            return outer;
-        }
-
         private Dictionary<string,string> DoParse<T>(string input )
         {
-            var typeIdx = Entry(typeof(T));
             len = input.Length;
             txt = input;
             Reset(StringRead, StringNext, StringChar, StringSpace);
             return 
-                (Dictionary<string,string>)GetValueByTypeIdx(typeIdx);
+                (Dictionary<string,string>)GetValueByTypeIdx(0);
         }
 
         private T DoParse<T>(TextReader input )
         {
-            var outer = Entry(typeof(T));
             str = input;
             Reset(StreamRead, StreamNext, StreamChar, StreamSpace);
             return  (T)GetValueByTypeIdx(0);
         }
-
-        public static object Identity(object obj) { return obj; }
 
         public JsonPather() : this(null) { }
 
@@ -608,7 +353,6 @@ namespace Sys.Text.Json
             if (!options.Validate()) throw new ArgumentException("Invalid JSON parser options", "options");
 
             lbf = new char[lbs = options.StringBufferLength];
-            types = new TypeInfo[options.TypeCacheCapacity];
             valueLexer['n'] = Null;
             valueLexer['f'] = False;
             valueLexer['t'] = True;
