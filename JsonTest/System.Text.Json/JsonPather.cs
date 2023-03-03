@@ -41,19 +41,11 @@ namespace Sys.Text.Json
         private int chr;
         private int at;
 
-        internal class EnumInfo
-        {
-            internal string Name;
-            internal object Value;
-            internal int Len;
-        }
-
         internal class ItemInfo
         {
             internal string Name;
             internal Action<object, JsonPather, int, int> Set;
             internal Type Type;
-            internal int Outer;
             internal int Len;
             internal int Atm;
         }
@@ -62,7 +54,6 @@ namespace Sys.Text.Json
         {
             private static readonly HashSet<Type> WellKnown = new HashSet<Type>();
 
-            internal Func<Type, object, object, int, Func<object, object>> Select;
             internal Func<JsonPather, int, object> Parse;
             internal ItemInfo[] Props;
 #if FASTER_GETPROPINFO
@@ -465,11 +456,7 @@ namespace Sys.Text.Json
 
         private object Obj(int typeIdx)
         {
-            var cached = types[typeIdx]; 
-            var hash = types[0];
             
-            var mapper = null as Func<object, object>;
-            var keyed = hash.T;
             var ch = chr;
             if (ch != '{') throw Error("Bad object");
             Read();
@@ -483,44 +470,36 @@ namespace Sys.Text.Json
             Dictionary<string,string> obj = null;
             while (ch < EOF)
             {
-                ((Dictionary<string,string>) Parse(keyed)).TryGetValue("",out var slot );
-                Func<object, object> read = null;
+                ((Dictionary<string,string>) Parse(0)).TryGetValue("",out var slot );
                 SkipSpaces();
                 Next(':');
                 if (slot != null)
-                {
-                    //if (@select == null || (read = @select(cached.Type, obj, slot, -1)) != null)
-                    {
-                        Dictionary<string,string> val =(Dictionary<string,string>) Parse(cached.Inner);
-                        if (obj == null)
-                        {                            
-                            obj = new Dictionary<string, string>();
-                        }
-                        foreach(var kv in val)
-                        {
-                            obj.Add($"{slot}"+
-                                (
-                                string.IsNullOrEmpty(kv.Key)?
-                                "":
-                                kv.Key[0]=='[' ?$"{kv.Key}":$".{kv.Key}"
-                                ), kv.Value);
-                        }                                                
+                {                    
+                    Dictionary<string,string> val =(Dictionary<string,string>) Parse(0);
+                    if (obj == null)
+                    {                            
+                        obj = new Dictionary<string, string>();
                     }
-                    //else
-                    //    GetValueByTypeIdx(0);
+                    foreach(var kv in val)
+                    {
+                        obj.Add($"{slot}"+
+                            (
+                            string.IsNullOrEmpty(kv.Key)?
+                            "":
+                            kv.Key[0]=='[' ?$"{kv.Key}":$".{kv.Key}"
+                            ), kv.Value);
+                    }
                 }
                 else
                     GetValueByTypeIdx(0);
 
-                mapper = mapper ?? read;
                 ch = SkipSpaces();
                 if (ch == '}')
                 {
-                    mapper = mapper ?? Identity;
                     Read();
-                    return mapper(                        
+                    return                         
                         obj 
-                        );
+                        ;
                 }
                 Next(',');
                 ch = SkipSpaces();
