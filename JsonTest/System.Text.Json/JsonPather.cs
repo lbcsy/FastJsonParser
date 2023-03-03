@@ -38,15 +38,6 @@ namespace Sys.Text.Json
         private int chr;
         private int at;
 
-        internal class ItemInfo
-        {
-            internal string Name;
-            internal Action<object, JsonPather, int, int> Set;
-            internal Type Type;
-            internal int Len;
-            internal int Atm;
-        }
-
         static JsonPather()
         {
             for (char c = '0'; c <= '9'; c++) { HXD[c] = true; HEX[c] = (byte)(c - 48); }
