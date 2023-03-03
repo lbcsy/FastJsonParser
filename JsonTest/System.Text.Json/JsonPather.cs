@@ -20,7 +20,7 @@ namespace Sys.Text.Json
         private const int EOF = char.MaxValue + 1;
         private const int ANY = 0;
 
-        private readonly Func<int, object>[] valueLexer = new Func<int, object>[128];
+        private readonly Func<object>[] valueLexer = new Func<object>[128];
         private readonly StringBuilder lsb = new StringBuilder();
         private readonly char[] stc = new char[1];
         private readonly char[] lbf;
@@ -50,7 +50,9 @@ namespace Sys.Text.Json
             for (int c = 'A'; c <= 'Z'; c++) IDF[c] = IDN[c] = IDF[c + 32] = IDN[c + 32] = true;
         }
 
-        private Exception Error(string message) { return new Exception(string.Format("{0} at {1} (found: '{2}')", message, at, chr < EOF ? "\\" + chr : "EOF")); }
+        private Exception Error(string message) 
+        { 
+            return new Exception(string.Format("{0} at {1} (found: '{2}')", message, at, chr < EOF ? "\\" + chr : "EOF")); }
         private void Reset(Func<int> read, Action<int> next, Func<int, int> achar, Func<int> space)
         {
             at = -1; chr = ANY; Read = read; Next = next; Char = achar; SkipSpaces = space;
@@ -130,7 +132,7 @@ namespace Sys.Text.Json
             Char(ch);
         }
 
-        private string ParseString(int outer)
+        private string ParseString()
         {
             var ch = SkipSpaces();
             if (ch == '"')
@@ -162,24 +164,24 @@ namespace Sys.Text.Json
             }
             if (ch == 'n')
             {
-                Null(0);
+                Null();
                 return "null"; 
             }
-            throw Error(outer >= 0 ? "Bad string" : "Bad key");
+            throw Error("Bad string" );
         }
 
-        private object Error(int outer) { throw Error($"Bad value @outer={outer}"); }
-        private Dictionary<string,string> Null(int outer) { Read(); Next('u'); Next('l'); Next('l');
+        private object Error() { throw Error($"Bad value"); }
+        private Dictionary<string,string> Null() { Read(); Next('u'); Next('l'); Next('l');
             return new Dictionary<string, string>() { { "", "null" } };
         }
-        private Dictionary<string, string> False(int outer) { Read(); Next('a'); Next('l'); Next('s'); Next('e');
+        private Dictionary<string, string> False() { Read(); Next('a'); Next('l'); Next('s'); Next('e');
             return new Dictionary<string, string>() { { "", "false" } };
         }
-        private Dictionary<string,string> True(int outer) { Read(); Next('r'); Next('u'); Next('e'); 
+        private Dictionary<string,string> True() { Read(); Next('r'); Next('u'); Next('e'); 
             return new Dictionary<string, string>() { { "", "true" } }; 
         }
 
-        private Dictionary<string,string> Num(int outer)
+        private Dictionary<string,string> Num()
         {
             var ch = chr;
             lsb.Length = 0; lln = 0;
@@ -196,9 +198,9 @@ namespace Sys.Text.Json
             return new Dictionary<string, string>() { { "", lsb.Length > 0 ? lsb.ToString() : new string(lbf, 0, lln) } };            
         }
 
-        private Dictionary<string,string> Str(int typeIdx)
+        private Dictionary<string,string> Str()
         {
-            var s = ParseString(0);
+            var s = ParseString();
             
             var dic = new Dictionary<string, string>
             {
@@ -207,13 +209,13 @@ namespace Sys.Text.Json
             return dic;           
         }
 
-        private object Parse(int typed)
+        private object Parse()
         {
             return 
-                    GetValueByTypeIdx(typed);
+                    GetValueByTypeIdx();
         }
 
-        private object Obj(int typeIdx)
+        private object Obj()
         {
             
             var ch = chr;
@@ -229,12 +231,12 @@ namespace Sys.Text.Json
             Dictionary<string,string> obj = null;
             while (ch < EOF)
             {
-                ((Dictionary<string,string>) Parse(0)).TryGetValue("",out var slot );
+                ((Dictionary<string,string>) Parse()).TryGetValue("",out var slot );
                 SkipSpaces();
                 Next(':');
                 if (slot != null)
                 {                    
-                    Dictionary<string,string> val =(Dictionary<string,string>) Parse(0);
+                    Dictionary<string,string> val =(Dictionary<string,string>) Parse();
                     if (obj == null)
                     {                            
                         obj = new Dictionary<string, string>();
@@ -250,7 +252,7 @@ namespace Sys.Text.Json
                     }
                 }
                 else
-                    GetValueByTypeIdx(0);
+                    GetValueByTypeIdx();
 
                 ch = SkipSpaces();
                 if (ch == '}')
@@ -266,7 +268,7 @@ namespace Sys.Text.Json
             throw Error("Bad object");
         }
 
-        private Dictionary<string,string> Arr(int outer)
+        private Dictionary<string,string> Arr()
         {
             var ch = chr;
             var i = -1;
@@ -285,12 +287,12 @@ namespace Sys.Text.Json
                 i++;
                 if (ch == 'n' )
                 {
-                    Null(0);
+                    Null();
                     obj.Add($"[{i}]", "null");
                 }
                 else 
                 {
-                    var value=(Dictionary<string,string>) Parse(0);
+                    var value=(Dictionary<string,string>) Parse();
                     foreach (var kv in value)
                     {
                         obj.Add($"[{i}]" + (string.IsNullOrEmpty(kv.Key) ? "" : $".{kv.Key}"), kv.Value);
@@ -310,9 +312,9 @@ namespace Sys.Text.Json
             throw Error("Bad array");
         }
 
-        private object GetValueByTypeIdx(int typeIdx)
+        private object GetValueByTypeIdx()
         {
-            return valueLexer[SkipSpaces() & 0x7f](typeIdx);
+            return valueLexer[SkipSpaces() & 0x7f]();
         }
 
         private Dictionary<string,string> DoParse<T>(string input )
@@ -321,14 +323,14 @@ namespace Sys.Text.Json
             txt = input;
             Reset(StringRead, StringNext, StringChar, StringSpace);
             return 
-                (Dictionary<string,string>)GetValueByTypeIdx(0);
+                (Dictionary<string,string>)GetValueByTypeIdx();
         }
 
         private T DoParse<T>(TextReader input )
         {
             str = input;
             Reset(StreamRead, StreamNext, StreamChar, StreamSpace);
-            return  (T)GetValueByTypeIdx(0);
+            return  (T)GetValueByTypeIdx();
         }
 
         public JsonPather() : this(null) { }
