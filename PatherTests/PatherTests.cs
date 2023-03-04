@@ -4,47 +4,21 @@ using Sys.Text.Json.JsonPath;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.JsonPath;
 using System.Text.Json.JsonPath.LambdaCompilation;
+using System.Threading;
 
 namespace PatherTests
 {
-    public class Data
-    {
-        public Store store { get; set; }
-    }
-    public class Store
-    {
-        public Book[] book { get; set; }
-        public Bicycle bicycle { get; set; }
-    }
-
-    public class Book
-    {
-        public string category { get; set; }
-        public string author { get; set; }
-        public string title { get; set; }
-        public string isbn { get; set; }
-        public decimal price { get; set; }
-    }
-
-    public class Bicycle
-    {
-        public string color { get; set; }
-        public decimal price { get; set; }
-    }
-
+   
     public class PatherTests
     {
+        private string input;
         [SetUp]
         public void Setup()
         {
-        }
-
-        [Test]
-        public void TestPatherString()
-        {
-            string input = @"
+            input = @"
               { 
 ""emptyObject"":{},
 ""store"": {
@@ -88,8 +62,26 @@ namespace PatherTests
               }
             }
         ";
+
+        }
+        [Test]
+        public void TestParseString()
+        {
+            var parser=new JsonParser();
+            System.Diagnostics.Stopwatch w = System.Diagnostics.Stopwatch.StartNew();
+            var untyped =parser.Parse(input);
+            var period = w.ElapsedMilliseconds;
+            Console.WriteLine($"Period: {period}");
+            Assert.IsNotNull(untyped);
+        }
+        [Test]
+        public void TestPatherString()
+        {
             var parser1 = new JsonPather();
+            System.Diagnostics.Stopwatch w = System.Diagnostics.Stopwatch.StartNew();
             var untyped = parser1.Parse(input); // (object untyped = ...)
+            var period = w.ElapsedMilliseconds;
+            Console.WriteLine($"Period: {period}");
             var dic = untyped;
 
             Assert.IsTrue(dic.Count > 1);

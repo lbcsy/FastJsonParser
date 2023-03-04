@@ -209,12 +209,6 @@ namespace Sys.Text.Json
             return dic;           
         }
 
-        private object Parse()
-        {
-            return 
-                    GetValueByTypeIdx();
-        }
-
         private object Obj()
         {
             
@@ -317,7 +311,7 @@ namespace Sys.Text.Json
             return valueLexer[SkipSpaces() & 0x7f]();
         }
 
-        private Dictionary<string,string> DoParse<T>(string input )
+        private Dictionary<string,string> DoParse(string input )
         {
             len = input.Length;
             txt = input;
@@ -326,11 +320,11 @@ namespace Sys.Text.Json
                 (Dictionary<string,string>)GetValueByTypeIdx();
         }
 
-        private T DoParse<T>(TextReader input )
+        private object DoParse(TextReader input )
         {
             str = input;
             Reset(StreamRead, StreamNext, StreamChar, StreamSpace);
-            return  (T)GetValueByTypeIdx();
+            return  GetValueByTypeIdx();
         }
 
         public JsonPather() : this(null) { }
@@ -358,62 +352,26 @@ namespace Sys.Text.Json
                 valueLexer[input] = valueLexer[input] ?? Error;
             }           
         }
-
-        public Dictionary<string,string> Parse(string input)
-        {             
-            return Parse<object>(input); 
-        }
-
-        public object Parse(TextReader input) { return Parse<object>(input); }
-
-        public object Parse(Stream input) { return Parse<object>(input); }
-
-        public object Parse(Stream input, Encoding encoding) { return Parse<object>(input, encoding); }
-
-        public object Parse(Stream input, IDictionary<Type, Func<Type, object, object, int, Func<object, object>>> mappers) { return Parse<object>(input, mappers); }
-
-        public object Parse(Stream input, Encoding encoding, IDictionary<Type, Func<Type, object, object, int, Func<object, object>>> mappers) { return Parse<object>(input, encoding, mappers); }
-
-        public Dictionary<string,string> Parse<T>(string input) 
+        private object Parse()
         {
-            return Parse(default(T), input);
+            return GetValueByTypeIdx();
         }
-
-        public Dictionary<string,string> Parse<T>(T prototype, string input)
+        public object Parse(Stream input, Encoding encoding)
         {
             if (input == null) throw new ArgumentNullException("input", "cannot be null");
-            return DoParse<T>(input);
+            return DoParse(encoding != null ? new StreamReader(input, encoding) : new StreamReader(input));
         }
-
-        public T Parse<T>(TextReader input)
-        { 
-            return Parse(default(T), input);
-        }
-
-        public T Parse<T>(T prototype, TextReader input)
+        
+        public Dictionary<string,string> Parse( string input)
         {
             if (input == null) throw new ArgumentNullException("input", "cannot be null");
-            return DoParse<T>(input);
+            return DoParse(input);
         }
 
-        public T Parse<T>(Stream input) { return Parse(default(T), input); }
-
-        public T Parse<T>(T prototype, Stream input) { return Parse<T>(input, null as Encoding); }
-
-        public T Parse<T>(Stream input, Encoding encoding) { return Parse(default(T), input, encoding); }
-
-        public T Parse<T>(T prototype, Stream input, Encoding encoding) { return Parse<T>(input, encoding, null); }
-
-        public T Parse<T>(Stream input, IDictionary<Type, Func<Type, object, object, int, Func<object, object>>> mappers) { return Parse(default(T), input, mappers); }
-
-        public T Parse<T>(T prototype, Stream input, IDictionary<Type, Func<Type, object, object, int, Func<object, object>>> mappers) { return Parse<T>(input, null, mappers); }
-
-        public T Parse<T>(Stream input, Encoding encoding, IDictionary<Type, Func<Type, object, object, int, Func<object, object>>> mappers) { return Parse(default(T), input, encoding, mappers); }
-
-        public T Parse<T>(T prototype, Stream input, Encoding encoding, IDictionary<Type, Func<Type, object, object, int, Func<object, object>>> mappers)
+        public object Parse( TextReader input)
         {
             if (input == null) throw new ArgumentNullException("input", "cannot be null");
-            return DoParse<T>(encoding != null ? new StreamReader(input, encoding) : new StreamReader(input));
+            return DoParse(input);
         }
     }
 }
